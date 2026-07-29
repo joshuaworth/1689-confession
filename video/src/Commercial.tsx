@@ -72,7 +72,17 @@ const S1: React.FC = () => {
     <Scene vo="vo/s1.mp3">
       <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 250, letterSpacing: "-0.04em", color: C.ink }}>
         1689
-        <span style={{ color: C.red, display: "inline-block", transform: `scale(${pop})` }}>.</span>
+        <span
+          style={{
+            display: "inline-block",
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            background: C.red,
+            marginLeft: 14,
+            transform: `scale(${pop})`,
+          }}
+        />
       </div>
     </Scene>
   );
