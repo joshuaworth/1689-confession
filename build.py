@@ -341,7 +341,7 @@ body.hide-proofs .proofs { display: none; }
   var versesPromise = null;
   function verses() {
     if (!versesPromise) {
-      versesPromise = fetch('verses.json').then(function (r) { return r.json(); });
+      versesPromise = fetch('verses.json?v=2').then(function (r) { return r.json(); });
     }
     return versesPromise;
   }

@@ -688,7 +688,7 @@ All of which are given by the inspiration of God, to be the rule of faith and li
   var versesPromise = null;
   function verses() {
     if (!versesPromise) {
-      versesPromise = fetch('verses.json').then(function (r) { return r.json(); });
+      versesPromise = fetch('verses.json?v=2').then(function (r) { return r.json(); });
     }
     return versesPromise;
   }

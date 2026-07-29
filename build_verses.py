@@ -44,6 +44,10 @@ WEB_CODES = {
     "HEB": "hebrews", "JAS": "james", "1PE": "1peter", "2PE": "2peter",
     "1JN": "1john", "2JN": "2john", "3JN": "3john", "JUD": "jude",
     "REV": "revelation",
+    # engwebp uses several non-standard codes
+    "EZE": "ezekiel", "JOH": "john", "MAR": "mark", "SOL": "songofsolomon",
+    "JAM": "james", "1JO": "1john", "2JO": "2john", "3JO": "3john",
+    "PHI": "philippians", "JOE": "joel", "NAH": "nahum",
 }
 
 
