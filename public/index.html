@@ -153,6 +153,40 @@ body.hide-proofs .proofs { display: none; }
 .seg button:hover { color: var(--oxblood); }
 .seg button.on { color: var(--paper); background: var(--oxblood); }
 
+/* Search */
+.controls kbd { font-family: inherit; font-size: 11px; border: 1px solid var(--rule); border-radius: 3px;
+  padding: 1px 5px; margin-left: 4px; color: var(--ink-soft); }
+#searchOverlay { position: fixed; inset: 0; z-index: 60; background: rgba(15, 11, 8, .5);
+  backdrop-filter: blur(3px); display: none; }
+#searchOverlay.open { display: block; }
+.search-box { max-width: 660px; margin: 7vh auto 0; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 6px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 0 4px var(--shadow); }
+.search-head { display: flex; align-items: center; border-bottom: 3px double var(--rule); }
+.search-head .fleuron { padding: 0 0 0 18px; color: var(--gold); font-size: 16px; }
+#searchInput { flex: 1; font-family: "EB Garamond", serif; font-size: 20px; color: var(--ink);
+  background: transparent; border: none; outline: none; padding: 16px 18px; }
+#searchInput::placeholder { color: var(--ink-soft); font-style: italic; opacity: .7; }
+.search-esc { font-family: "IM Fell English SC", serif; font-size: 12px; color: var(--ink-soft);
+  border: 1px solid var(--rule); border-radius: 3px; padding: 2px 8px; margin-right: 16px; cursor: pointer;
+  background: none; }
+#searchResults { max-height: 62vh; overflow-y: auto; scrollbar-width: thin; }
+.sr-group { font-family: "IM Fell English SC", serif; font-size: 12px; letter-spacing: .28em;
+  color: var(--gold); padding: 12px 18px 4px; }
+.sr-item { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+  padding: 10px 18px; border-left: 3px solid transparent; font-family: "EB Garamond", serif; color: var(--ink); }
+.sr-item .sr-where { font-family: "IM Fell English SC", serif; font-size: 12.5px; letter-spacing: .12em;
+  color: var(--oxblood); display: block; margin-bottom: 2px; }
+.sr-item .sr-text { font-size: 16px; line-height: 1.5; color: var(--ink-soft); display: block; }
+.sr-item mark { background: none; color: var(--oxblood); font-weight: 600; }
+.sr-item.active, .sr-item:hover { background: var(--paper-deep); border-left-color: var(--oxblood); }
+.sr-empty { padding: 26px 18px 30px; text-align: center; font-style: italic; color: var(--ink-soft); }
+.para.flash { animation: parflash 1.8s ease; }
+@keyframes parflash { 0% { background: rgba(138, 109, 47, .3); } 100% { background: transparent; } }
+@media (max-width: 700px) {
+  .search-box { margin: 3vh 10px 0; }
+  #searchInput { font-size: 17px; }
+}
+
 /* Reading progress + back-to-top */
 #progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 50;
   background: linear-gradient(90deg, var(--oxblood), var(--gold)); transition: width .1s linear; }
@@ -197,6 +231,7 @@ body.hide-proofs .proofs { display: none; }
 
   <nav class="side" aria-label="Table of contents">
     <div class="controls">
+      <button id="searchBtn" aria-label="Search (press slash)">Search <kbd>/</kbd></button>
       <button id="proofsBtn" aria-pressed="true">Scripture Proofs</button>
       <button id="themeBtn" aria-pressed="false">Candlelight</button>
     </div>
@@ -676,6 +711,18 @@ All of which are given by the inspiration of God, to be the rule of faith and li
 </div>
 <div id="progress"></div>
 <button id="totop" aria-label="Back to top">❦</button>
+
+<div id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search the confession">
+  <div class="search-box">
+    <div class="search-head">
+      <span class="fleuron">❦</span>
+      <input id="searchInput" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Search the confession and its scripture proofs&hellip;">
+      <button class="search-esc" id="searchEsc">esc</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
 <script>
 (function () {
   var proofsBtn = document.getElementById('proofsBtn');
@@ -762,6 +809,233 @@ All of which are given by the inspiration of God, to be the rule of faith and li
     b.addEventListener('click', function () { setMode(b.getAttribute('data-tr')); });
   });
   setMode(mode);
+
+  // ---- Search ----
+  var overlay = document.getElementById('searchOverlay');
+  var input = document.getElementById('searchInput');
+  var resultsEl = document.getElementById('searchResults');
+  var paraIndex = null, activeIdx = -1, currentItems = [];
+  var ROMAN = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV',
+    'XVI','XVII','XVIII','XIX','XX','XXI','XXII','XXIII','XXIV','XXV','XXVI','XXVII','XXVIII',
+    'XXIX','XXX','XXXI','XXXII'];
+
+  function normText(s) {
+    return s.toLowerCase().replace(/[‘’']/g, "'").replace(/[“”]/g, '"')
+            .replace(/[—–]/g, '-');
+  }
+
+  function buildParaIndex() {
+    if (paraIndex) { return paraIndex; }
+    paraIndex = [];
+    document.querySelectorAll('.chapter').forEach(function (ch) {
+      var chNum = parseInt(ch.id.slice(2), 10);
+      var chTitle = ch.querySelector('h2').textContent;
+      ch.querySelectorAll('.para').forEach(function (para) {
+        var pNum = para.id.split('p')[1];
+        var clone = para.querySelector('p').cloneNode(true);
+        var proofs = clone.querySelector('.proofs');
+        if (proofs) { proofs.remove(); }
+        var refs = [].map.call(para.querySelectorAll('.ref'), function (b) { return b.getAttribute('data-ref'); });
+        paraIndex.push({ ch: chNum, chTitle: chTitle, p: pNum, text: clone.textContent.trim(),
+                         el: para, refs: refs });
+      });
+    });
+    return paraIndex;
+  }
+
+  function scoreText(ntext, terms, phrase) {
+    var score = 0;
+    for (var i = 0; i < terms.length; i++) {
+      var idx = ntext.indexOf(terms[i]);
+      if (idx === -1) { return 0; }
+      score += 1;
+      // count extra occurrences lightly
+      score += Math.min(3, ntext.split(terms[i]).length - 2) * 0.3;
+    }
+    if (phrase && ntext.indexOf(phrase) !== -1) { score += 6; }
+    return score;
+  }
+
+  function excerpt(text, terms) {
+    var ntext = normText(text);
+    var idx = terms.length ? ntext.indexOf(terms[0]) : 0;
+    if (idx < 0) { idx = 0; }
+    var start = Math.max(0, idx - 60);
+    var slice = (start > 0 ? '…' : '') + text.slice(start, start + 190) +
+                (start + 190 < text.length ? '…' : '');
+    return highlight(slice, terms);
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlight(text, terms) {
+    var safe = escapeHtml(text);
+    if (!terms.length) { return safe; }
+    var pattern = terms.map(function (t) {
+      return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('|');
+    try {
+      return safe.replace(new RegExp('(' + pattern + ')', 'gi'), '<mark>$1</mark>');
+    } catch (e) { return safe; }
+  }
+
+  function runSearch(q) {
+    var phrase = normText(q.trim());
+    if (!phrase || phrase.length < 2) { resultsEl.innerHTML = ''; currentItems = []; return; }
+    var terms = phrase.split(/\s+/).filter(function (t) { return t.length > 1; });
+    if (!terms.length) { terms = [phrase]; }
+
+    var items = [];
+
+    // Chapter jump: "chapter 11" / "ch 11" / bare number
+    var chm = phrase.match(/^(?:chapter|chap|ch)?\.?\s*(\d{1,2})$/);
+    if (chm) {
+      var cn = parseInt(chm[1], 10);
+      if (cn >= 1 && cn <= 32) {
+        var chEl = document.getElementById('ch' + cn);
+        items.push({ kind: 'chapter', where: 'Chapter ' + ROMAN[cn],
+                     html: escapeHtml(chEl.querySelector('h2').textContent),
+                     el: chEl, score: 100 });
+      }
+    }
+
+    var paras = buildParaIndex();
+    var pHits = [];
+    paras.forEach(function (p) {
+      var s = scoreText(normText(p.text), terms, phrase);
+      if (s > 0) {
+        pHits.push({ kind: 'para', where: 'Chapter ' + ROMAN[p.ch] + ' · ¶ ' + p.p +
+                     ' — ' + p.chTitle,
+                     html: excerpt(p.text, terms), el: p.el, score: s + 2 });
+      }
+      // also match on chapter title
+      else if (scoreText(normText(p.chTitle), terms, phrase) > 0 && p.p === '1') {
+        pHits.push({ kind: 'para', where: 'Chapter ' + ROMAN[p.ch] + ' — ' + p.chTitle,
+                     html: excerpt(p.text, []), el: p.el, score: 3 });
+      }
+    });
+    pHits.sort(function (a, b) { return b.score - a.score; });
+    items = items.concat(pHits.slice(0, 8));
+
+    verses().then(function (all) {
+      var vHits = [];
+      var isRefQuery = /\d/.test(phrase) && /^[1-3]?\s?[a-z]+\.?\s*\d/.test(phrase);
+      Object.keys(all).forEach(function (refKey) {
+        all[refKey].forEach(function (v) {
+          var matched = false, s = 0, source = '';
+          if (isRefQuery && normText(v.r).indexOf(phrase) === 0) { s = 50; matched = true; source = v.b || v.k || v.w; }
+          if (!matched) {
+            var texts = [['BSB', v.b], ['KJV', v.k], ['WEB', v.w]];
+            for (var i = 0; i < texts.length; i++) {
+              if (!texts[i][1]) { continue; }
+              var ts = scoreText(normText(texts[i][1]), terms, phrase);
+              if (ts > 0) { s = ts; matched = true; source = texts[i][1]; v._tr = texts[i][0]; break; }
+            }
+          }
+          if (matched) {
+            vHits.push({ kind: 'verse', where: v.r + (v._tr ? ' · ' + v._tr : ''),
+                         html: excerpt(source, isRefQuery ? [] : terms),
+                         refKey: refKey, score: s });
+          }
+        });
+      });
+      vHits.sort(function (a, b) { return b.score - a.score; });
+      // de-dup same verse cited in several paragraphs
+      var seen = {}, deduped = [];
+      vHits.forEach(function (h) {
+        var key = h.where + h.html.slice(0, 40);
+        if (!seen[key]) { seen[key] = 1; deduped.push(h); }
+      });
+      items = items.concat(deduped.slice(0, 10));
+      render(items, q);
+    });
+  }
+
+  function render(items, q) {
+    currentItems = items; activeIdx = items.length ? 0 : -1;
+    if (!items.length) {
+      resultsEl.innerHTML = '<div class="sr-empty">Nothing found for “' + escapeHtml(q) + '”</div>';
+      return;
+    }
+    var html = '', lastKind = '';
+    items.forEach(function (item, i) {
+      var group = item.kind === 'verse' ? 'In the Scripture Proofs' :
+                  item.kind === 'chapter' ? 'Chapters' : 'In the Confession';
+      if (group !== lastKind) { html += '<div class="sr-group">' + group + '</div>'; lastKind = group; }
+      html += '<button class="sr-item' + (i === activeIdx ? ' active' : '') + '" data-i="' + i + '">' +
+              '<span class="sr-where">' + escapeHtml(item.where) + '</span>' +
+              '<span class="sr-text">' + item.html + '</span></button>';
+    });
+    resultsEl.innerHTML = html;
+    resultsEl.querySelectorAll('.sr-item').forEach(function (btn) {
+      btn.addEventListener('click', function () { choose(parseInt(btn.getAttribute('data-i'), 10)); });
+    });
+  }
+
+  function choose(i) {
+    var item = currentItems[i];
+    if (!item) { return; }
+    closeSearch();
+    if (item.kind === 'verse') {
+      var btn = document.querySelector('.proofs .ref[data-ref="' + item.refKey.replace(/"/g, '\\"') + '"]');
+      if (btn) {
+        var para = btn.closest('.para');
+        para.scrollIntoView({ block: 'center' });
+        flash(para);
+        var existing = para.querySelector('.prooftext');
+        if (!existing || existing._refBtn !== btn) { btn.click(); }
+        return;
+      }
+    }
+    item.el.scrollIntoView({ block: item.kind === 'chapter' ? 'start' : 'center' });
+    if (item.kind !== 'chapter') { flash(item.el); }
+  }
+
+  function flash(el) {
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  function openSearch() {
+    overlay.classList.add('open');
+    verses();           // warm the verse data
+    buildParaIndex();
+    input.value = ''; resultsEl.innerHTML = ''; currentItems = [];
+    setTimeout(function () { input.focus(); }, 30);
+  }
+  function closeSearch() { overlay.classList.remove('open'); }
+
+  document.getElementById('searchBtn').addEventListener('click', openSearch);
+  document.getElementById('searchEsc').addEventListener('click', closeSearch);
+  overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) { closeSearch(); } });
+
+  var debounce = null;
+  input.addEventListener('input', function () {
+    clearTimeout(debounce);
+    debounce = setTimeout(function () { runSearch(input.value); }, 90);
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!currentItems.length) { return; }
+      activeIdx = (activeIdx + (e.key === 'ArrowDown' ? 1 : -1) + currentItems.length) % currentItems.length;
+      resultsEl.querySelectorAll('.sr-item').forEach(function (b, i) {
+        b.classList.toggle('active', i === activeIdx);
+        if (i === activeIdx) { b.scrollIntoView({ block: 'nearest' }); }
+      });
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); choose(activeIdx);
+    } else if (e.key === 'Escape') { closeSearch(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    var typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+    if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key === 'k')) {
+      e.preventDefault(); openSearch();
+    } else if (e.key === 'Escape' && overlay.classList.contains('open')) { closeSearch(); }
+  });
 
   // ---- Reading progress + back-to-top ----
   var progress = document.getElementById('progress');
