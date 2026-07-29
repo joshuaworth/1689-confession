@@ -50,6 +50,34 @@ def apparatus_section(sid: str, kicker: str, title: str, paragraphs) -> str:
 </section>'''
 
 
+
+PRIVACY_HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy \u00b7 1689</title>
+<meta name="robots" content="noindex">
+<style>
+  body { font-family: Georgia, serif; max-width: 40rem; margin: 0 auto; padding: 4rem 1.25rem;
+    color: #1c1b1a; background: #faf9f7; line-height: 1.65; }
+  h1 { font-weight: 500; letter-spacing: -0.01em; color: #8a1016; }
+  a { color: #8a1016; }
+  @media (prefers-color-scheme: dark) { body { background: #121212; color: #e9e7e3; } }
+</style>
+</head>
+<body>
+<h1>Privacy</h1>
+<p>This site and the 1689 app collect nothing.</p>
+<p>There are no analytics, no trackers, no ads, no accounts, and no third-party code.
+Your bookmarks, notes, reading position, and settings are stored only on your own
+device and never leave it. No data is transmitted to us or to anyone else.</p>
+<p>The text of the Second London Baptist Confession of Faith (1689) is in the public domain.</p>
+<p><a href="/">Return to the confession</a></p>
+</body>
+</html>
+"""
+
 def build():
     data = json.loads(JSON_PATH.read_text())
     apparatus = json.loads((HERE / "apparatus.json").read_text())
@@ -108,6 +136,7 @@ def build():
                    .replace("{{CHAPTERS}}", all_body)
     OUT.mkdir(exist_ok=True)
     (OUT / "index.html").write_text(page)
+    (OUT / "privacy.html").write_text(PRIVACY_HTML)
 
     # Crawler / AI-tool surface
     (OUT / "robots.txt").write_text(
