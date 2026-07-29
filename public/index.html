@@ -49,8 +49,8 @@
   --paper-deep: #1c1b1a;
   --ink: #e9e7e3;
   --ink-soft: #a3a09a;
-  --oxblood: #c11722;
-  --oxblood-bright: #e02733;
+  --oxblood: #d92531;
+  --oxblood-bright: #f03b46;
   --gold: #c2a05a;
   --rule: #2b2a28;
   --shadow: rgba(0, 0, 0, .45);
@@ -87,7 +87,8 @@ body {
 .hero-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
   color: var(--oxblood); margin-bottom: 20px; }
 .hero h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(56px, 13vw, 128px);
-  line-height: .95; letter-spacing: -0.015em; margin-bottom: 26px; text-wrap: balance; }
+  line-height: .95; letter-spacing: -0.015em; margin-bottom: 26px; text-wrap: balance;
+  color: var(--oxblood); }
 .hero-sub { font: 400 16.5px/1.6 var(--sans); color: var(--ink-soft); max-width: 46ch; margin-bottom: 26px; }
 .hero-meta { display: flex; flex-wrap: wrap; gap: 8px 0; font: 500 12.5px var(--sans); color: var(--ink-soft); }
 .hero-meta span { display: flex; align-items: center; }
@@ -96,7 +97,7 @@ body {
 
 /* ---------- Sidebar (desktop rail / mobile sheet) ---------- */
 .side { position: sticky; top: 61px; align-self: start; max-height: calc(100vh - 61px);
-  overflow-y: auto; padding: 28px 4px 40px; scrollbar-width: thin; }
+  overflow-y: auto; padding: 28px 4px 40px; scrollbar-width: thin; overscroll-behavior: contain; }
 .side-close { display: none; }
 .side h3 { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .14em;
   color: var(--ink-soft); margin: 22px 0 10px; }
@@ -105,8 +106,7 @@ body {
   font: 400 14px/1.45 var(--sans); border-radius: 8px; transition: all .12s; }
 .side li a:hover { color: var(--ink); background: var(--paper-deep); }
 .side li a.active { color: var(--oxblood); background: var(--paper-deep); font-weight: 600; }
-.side .rn { flex: 0 0 26px; font: 600 12px/1.7 var(--sans); color: var(--oxblood); opacity: .55; }
-.side li a.active .rn { opacity: 1; }
+.side .rn { flex: 0 0 26px; font: 600 12px/1.7 var(--sans); color: var(--oxblood); }
 
 /* ---------- Controls ---------- */
 .controls { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -123,7 +123,7 @@ main { padding-bottom: 120px; }
 .ch-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
   color: var(--oxblood); margin-bottom: 10px; }
 .ch-head h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(30px, 6vw, 44px);
-  line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+  line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; color: var(--oxblood); }
 .para { position: relative; margin: 0 0 18px; }
 .para .pnum { font: 600 12px/1 var(--sans); color: var(--oxblood); text-decoration: none;
   margin-right: 9px; }
@@ -179,7 +179,9 @@ body.hide-proofs .proofs { display: none; }
 .search-esc { font: 500 11px var(--sans); color: var(--ink-soft);
   border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; margin-right: 16px; cursor: pointer;
   background: none; }
-#searchResults { max-height: 60vh; overflow-y: auto; scrollbar-width: thin; }
+#searchResults { max-height: 60vh; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+#searchOverlay { overscroll-behavior: contain; }
+body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 .sr-group { font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .12em;
   color: var(--ink-soft); padding: 14px 18px 5px; }
 .sr-item { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer;
@@ -997,14 +999,38 @@ All of which are given by the inspiration of God, to be the rule of faith and li
     el.classList.add('flash');
   }
 
+  // Body scroll lock — stops iOS scrolling the page beneath open overlays
+  var lockY = 0, lockCount = 0;
+  function lockBody(on) {
+    if (on) {
+      if (++lockCount > 1) { return; }
+      lockY = window.scrollY;
+      document.body.style.top = (-lockY) + 'px';
+      document.body.classList.add('locked');
+    } else {
+      if (lockCount === 0 || --lockCount > 0) { return; }
+      document.body.classList.remove('locked');
+      document.body.style.top = '';
+      var html = document.documentElement;
+      var prev = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto';
+      window.scrollTo(0, lockY);
+      html.style.scrollBehavior = prev;
+    }
+  }
+
   function openSearch() {
     overlay.classList.add('open');
+    lockBody(true);
     verses();           // warm the verse data
     buildParaIndex();
     input.value = ''; resultsEl.innerHTML = ''; currentItems = [];
     setTimeout(function () { input.focus(); }, 30);
   }
-  function closeSearch() { overlay.classList.remove('open'); }
+  function closeSearch() {
+    if (overlay.classList.contains('open')) { lockBody(false); }
+    overlay.classList.remove('open');
+  }
 
   document.getElementById('searchBtn').addEventListener('click', openSearch);
   document.getElementById('searchEsc').addEventListener('click', closeSearch);
@@ -1015,14 +1041,23 @@ All of which are given by the inspiration of God, to be the rule of faith and li
   document.getElementById('tbTheme').addEventListener('click', function () {
     setTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
   });
+  var sheetMedia = window.matchMedia('(max-width: 900px)');
+  function closeSheet() {
+    if (side.classList.contains('open')) {
+      side.classList.remove('open');
+      if (sheetMedia.matches) { lockBody(false); }
+    }
+  }
   document.getElementById('tbContents').addEventListener('click', function () {
-    side.classList.toggle('open');
+    if (side.classList.contains('open')) { closeSheet(); }
+    else {
+      side.classList.add('open');
+      if (sheetMedia.matches) { lockBody(true); }
+    }
   });
-  document.getElementById('sideClose').addEventListener('click', function () {
-    side.classList.remove('open');
-  });
+  document.getElementById('sideClose').addEventListener('click', closeSheet);
   side.addEventListener('click', function (e) {
-    if (e.target.closest('a')) { side.classList.remove('open'); }
+    if (e.target.closest('a')) { closeSheet(); }
   });
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) { closeSearch(); } });
 
