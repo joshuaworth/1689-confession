@@ -387,7 +387,8 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
   <footer class="colophon">
     <div class="sdg">Soli Deo Gloria</div>
     <p>The Second London Baptist Confession of Faith (1677/1689). The text is in the public domain.<br>
-    Scripture proof references link to the King James Version.</p>
+    Tap any scripture proof to read it in the Berean Standard Bible, the King James Version, or the
+    World English Bible — or all three in parallel.</p>
   </footer>
 
 </div>
