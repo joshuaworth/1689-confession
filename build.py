@@ -334,7 +334,8 @@ body {
 /* ---------- Chapters ---------- */
 main { padding-bottom: 120px; }
 .chapter { border-top: 1px solid var(--rule); margin-top: 56px; padding-top: 44px;
-  content-visibility: auto; contain-intrinsic-size: auto 3200px; }
+  content-visibility: auto; contain-intrinsic-width: auto 300px;
+  contain-intrinsic-height: auto 3200px; }
 .chapter:first-of-type { border-top: none; margin-top: 0; }
 .ch-head { margin: 0 0 28px; }
 .ch-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
