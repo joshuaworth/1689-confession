@@ -66,7 +66,15 @@ struct ParagraphView: View {
         Text(attributed)
             .lineSpacing(CGFloat(store.bodySize) * 0.55)
             .tint(Theme.red)
-            .onAppear { store.recordPosition(paragraphID) }
+            .onAppear {
+                store.recordPosition(paragraphID)
+                #if DEBUG
+                if let seed = UserDefaults.standard.string(forKey: "seedProof"),
+                   seed.hasPrefix(paragraphID + "|") {
+                    expandedRef = String(seed.dropFirst(paragraphID.count + 1))
+                }
+                #endif
+            }
             .contextMenu {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -171,8 +179,6 @@ struct VerseScholium: View {
                     .buttonStyle(.plain)
             }
 
-            translationPicker
-
             ForEach(verses, id: \.r) { verse in
                 verseRow(verse)
             }
@@ -187,24 +193,6 @@ struct VerseScholium: View {
             Rectangle().fill(Theme.red).frame(width: 2)
         }
         .padding(.bottom, 6)
-    }
-
-    private var translationPicker: some View {
-        HStack(spacing: 6) {
-            ForEach(Translation.allCases) { translation in
-                Button {
-                    store.translation = translation
-                } label: {
-                    Text(translation.label)
-                        .font(Fonts.sans(12, weight: 600))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(store.translation == translation ? Theme.red : Theme.paperDeep(scheme))
-                        .foregroundColor(store.translation == translation ? .white : Theme.inkSoft(scheme))
-                        .clipShape(RoundedRectangle(cornerRadius: 7))
-                }
-                .buttonStyle(.plain)
-            }
-        }
     }
 
     @ViewBuilder

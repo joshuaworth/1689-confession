@@ -11,6 +11,22 @@ struct ContentsSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("✕")
+                            .font(Fonts.sans(15, weight: 500))
+                            .foregroundColor(Theme.ink(scheme))
+                            .frame(width: 40, height: 40)
+                            .background(Theme.paperDeep(scheme))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.bottom, 10)
+
                 controls
                     .padding(.bottom, 26)
 
@@ -34,8 +50,7 @@ struct ContentsSheet: View {
             .padding(.top, 26)
             .padding(.bottom, 50)
         }
-        .background(Theme.paper(scheme))
-        .presentationDragIndicator(.visible)
+        .background(Theme.paper(scheme).ignoresSafeArea())
     }
 
     // MARK: Controls

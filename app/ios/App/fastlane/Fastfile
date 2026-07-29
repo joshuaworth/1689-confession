@@ -1,0 +1,71 @@
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    app_store_connect_api_key(
+      key_id: "MDR3N3YJXX",
+      issuer_id: "f9c27b8e-d995-4b0f-805c-db500d67ee77",
+      key_filepath: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_MDR3N3YJXX.p8")
+    )
+  end
+
+  desc "Sync the site into the app, bump the build number, build, and upload to TestFlight"
+  lane :beta do
+    Dir.chdir("../../..") do
+      sh("npm run sync-site")
+      sh("npx cap sync ios")
+    end
+    increment_build_number(xcodeproj: "App.xcodeproj")
+    build_app(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.intentmesh.confession1689" => "1689 Confession App Store"
+        },
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution"
+      }
+    )
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+
+  desc "Upload the current build to the App Store version"
+  lane :release do
+    beta
+    deliver(
+      submit_for_review: false,
+      automatic_release: true,
+      force: true,
+      skip_screenshots: true,
+      skip_metadata: true
+    )
+  end
+end
+
+platform :ios do
+  desc "Build and upload the NATIVE SwiftUI app to TestFlight"
+  lane :native_beta do
+    Dir.chdir("../../../../swift-app") do
+      sh("xcodegen generate")
+    end
+    next_build = latest_testflight_build_number(app_identifier: "com.intentmesh.confession1689") + 1
+    increment_build_number(build_number: next_build,
+                           xcodeproj: "../../../swift-app/Confession1689.xcodeproj")
+    build_app(
+      project: "../../../swift-app/Confession1689.xcodeproj",
+      scheme: "Confession1689",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.intentmesh.confession1689" => "1689 Confession App Store",
+          "com.intentmesh.confession1689.widgets" => "1689 Widgets App Store"
+        },
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution"
+      }
+    )
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+end

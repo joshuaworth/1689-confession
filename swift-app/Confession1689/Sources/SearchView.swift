@@ -12,43 +12,75 @@ struct SearchView: View {
     private let library = Library.shared
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Theme.inkSoft(scheme))
-                TextField("Search the confession and its scripture proofs…", text: $query)
-                    .font(Fonts.sans(17))
-                    .focused($focused)
-                    .submitLabel(.search)
-                    .autocorrectionDisabled()
-                Button("esc") { dismiss() }
-                    .font(Fonts.sans(11, weight: 500))
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.rule(scheme)))
-                    .foregroundColor(Theme.inkSoft(scheme))
-                    .buttonStyle(.plain)
-            }
-            .padding(16)
-            .overlay(alignment: .bottom) { Rectangle().fill(Theme.rule(scheme)).frame(height: 1) }
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    let results = search(query)
-                    if !query.isEmpty && query.count > 1 && results.isEmpty {
-                        Text("Nothing found for \u{201C}\(query)\u{201D}")
-                            .font(Fonts.sans(14))
-                            .foregroundColor(Theme.inkSoft(scheme))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 30)
-                    }
-                    ForEach(results) { result in
-                        resultRow(result)
-                    }
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    TextField("Search the confession and its scripture proofs…", text: $query)
+                        .font(Fonts.sans(17))
+                        .foregroundColor(Theme.ink(scheme))
+                        .focused($focused)
+                        .submitLabel(.search)
+                        .autocorrectionDisabled()
+                        .padding(.vertical, 17)
+                        .padding(.leading, 14)
+                    Button("esc") { dismiss() }
+                        .font(Fonts.sans(11, weight: 500))
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.rule(scheme)))
+                        .foregroundColor(Theme.inkSoft(scheme))
+                        .buttonStyle(.plain)
+                        .padding(.trailing, 16)
                 }
+                .overlay(alignment: .bottom) { Rectangle().fill(Theme.rule(scheme)).frame(height: 1) }
+
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        let results = search(query)
+                        if !query.isEmpty && query.count > 1 && results.isEmpty {
+                            Text("Nothing found for \u{201C}\(query)\u{201D}")
+                                .font(Fonts.sans(14))
+                                .foregroundColor(Theme.inkSoft(scheme))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 28)
+                        }
+                        let grouped = Dictionary(grouping: results, by: \.group)
+                        ForEach(["Chapters", "In the Confession", "In the Scripture Proofs"], id: \.self) { group in
+                            if let items = grouped[group], !items.isEmpty {
+                                Text(group)
+                                    .font(Fonts.sans(10.5, weight: 600))
+                                    .kerning(1.2)
+                                    .textCase(.uppercase)
+                                    .foregroundColor(Theme.inkSoft(scheme))
+                                    .padding(.horizontal, 18)
+                                    .padding(.top, 14).padding(.bottom, 5)
+                                ForEach(items) { resultRow($0) }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 10)
+                }
+                .frame(maxHeight: 420)
             }
+            .background(Theme.paper(scheme))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.rule(scheme)))
+            .shadow(color: .black.opacity(0.35), radius: 35, y: 24)
+            .padding(.horizontal, 10)
+            .padding(.top, 16)
         }
-        .background(Theme.paper(scheme))
-        .onAppear { focused = true }
+        .presentationBackground(.clear)
+        .onAppear {
+            focused = true
+            #if DEBUG
+            if let seeded = UserDefaults.standard.string(forKey: "seedSearchQuery") {
+                query = seeded
+            }
+            #endif
+        }
     }
 
     private func resultRow(_ result: SearchResult) -> some View {
@@ -76,6 +108,7 @@ struct SearchView: View {
 
     struct SearchResult: Identifiable {
         let id = UUID()
+        let group: String
         let where_: String
         let excerpt: String
         let targetID: String
@@ -94,7 +127,8 @@ struct SearchView: View {
         if let match = phrase.wholeMatch(of: #/(?:chapter|chap|ch)?\.?\s*(\d{1,2})/#),
            let n = Int(match.1), (1...32).contains(n),
            let chapter = library.confession.chapters.first(where: { $0.number == n }) {
-            results.append(SearchResult(where_: "Chapter \(chapter.roman)",
+            results.append(SearchResult(group: "Chapters",
+                                        where_: "Chapter \(chapter.roman)",
                                         excerpt: chapter.title,
                                         targetID: "ch\(n)", score: 100))
         }
@@ -106,6 +140,7 @@ struct SearchView: View {
                 let score = scoreText(normalize(paragraph.text), needles: needles, phrase: phrase)
                 if score > 0 {
                     paragraphHits.append(SearchResult(
+                        group: "In the Confession",
                         where_: "Chapter \(chapter.roman) · ¶ \(paragraph.number) — \(chapter.title)",
                         excerpt: excerpt(paragraph.text, needles: needles),
                         targetID: "c\(chapter.number)p\(paragraph.number)",
@@ -113,6 +148,7 @@ struct SearchView: View {
                 } else if scoreText(normalize(chapter.title), needles: needles, phrase: phrase) > 0,
                           paragraph.number == 1 {
                     paragraphHits.append(SearchResult(
+                        group: "In the Confession",
                         where_: "Chapter \(chapter.roman) — \(chapter.title)",
                         excerpt: String(paragraph.text.prefix(190)),
                         targetID: "c\(chapter.number)p1",
@@ -126,6 +162,7 @@ struct SearchView: View {
                 let score = scoreText(normalize(text), needles: needles, phrase: phrase)
                 if score > 0 {
                     paragraphHits.append(SearchResult(
+                        group: "In the Confession",
                         where_: "\(section.title) · ¶ \(index + 1)",
                         excerpt: excerpt(text, needles: needles),
                         targetID: "\(prefix)-p\(index + 1)",
@@ -157,6 +194,7 @@ struct SearchView: View {
                     let text = parts.count == 2 ? parts[1] : source
                     if let target = targetParagraph(for: refKey) {
                         verseHits.append(SearchResult(
+                            group: "In the Scripture Proofs",
                             where_: verse.r + badge,
                             excerpt: excerpt(text, needles: isRefQuery ? [] : needles),
                             targetID: target,

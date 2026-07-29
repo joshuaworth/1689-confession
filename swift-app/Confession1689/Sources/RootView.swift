@@ -82,6 +82,13 @@ struct RootView: View {
             TopBar(showSearch: $showSearch, showContents: $showContents, scrollTo: scrollTo)
         }
         .onAppear {
+            #if DEBUG
+            switch UserDefaults.standard.string(forKey: "seedOverlay") {
+            case "contents": DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showContents = true }
+            case "search": DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showSearch = true }
+            default: break
+            }
+            #endif
             guard let position = store.position, position != "top" else {
                 store.restoring = false
                 return
@@ -93,7 +100,7 @@ struct RootView: View {
                 store.restoring = false
             }
         }
-        .sheet(isPresented: $showContents) {
+        .fullScreenCover(isPresented: $showContents) {
             ContentsSheet(scrollTo: scrollTo)
                 .environmentObject(store)
         }
