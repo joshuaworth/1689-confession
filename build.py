@@ -330,8 +330,8 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 @media (max-width: 900px) {
   .wrap { grid-template-columns: 1fr; gap: 0; }
   body { font-size: 17.5px; }
-  .side { position: fixed; inset: 0; z-index: 65; max-height: none; background: var(--paper);
-    padding: 64px 20px 40px; display: none; overflow-y: auto; }
+  .side { position: fixed; inset: 0; z-index: 65; height: 100dvh; max-height: 100dvh;
+    background: var(--paper); padding: 64px 20px 40px; display: none; overflow-y: auto; }
   .side.open { display: block; animation: sheetin .18s ease; }
   @keyframes sheetin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .side-close { display: grid; place-items: center; position: absolute; top: 12px; right: 14px;
