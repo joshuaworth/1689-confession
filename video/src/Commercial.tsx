@@ -117,16 +117,14 @@ const S3: React.FC = () => {
       </div>
       <div
         style={{
-          background: C.deep,
-          borderLeft: `6px solid ${C.red}`,
-          borderRadius: 22,
-          padding: "36px 44px",
+          borderTop: `2px solid ${C.rule}`,
+          borderBottom: `2px solid ${C.rule}`,
+          padding: "34px 10px 30px",
           maxWidth: 1050,
           marginTop: 54,
           textAlign: "left",
           opacity: cardIn,
           transform: `translateY(${(1 - cardIn) * 40}px)`,
-          boxShadow: "0 30px 80px rgba(20,18,16,.14)",
         }}
       >
         <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 21, letterSpacing: ".1em", color: C.red }}>
