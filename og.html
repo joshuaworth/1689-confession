@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital@1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 52.5vw; overflow: hidden; }
+  body {
+    background: #f5efe2; color: #241f1a;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "IM Fell English SC", serif;
+    position: relative;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0; opacity: .4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .frame { position: absolute; inset: 26px; border: 1px solid #c9bda3; }
+  .frame::after { content: ""; position: absolute; inset: 6px; border: 3px double #c9bda3; }
+  .card { text-align: center; position: relative; padding: 0 80px; }
+  .kicker { font-size: 26px; letter-spacing: .34em; color: #7a0e15; }
+  h1 { font-weight: 400; font-size: 84px; line-height: 1.04; letter-spacing: .01em; margin: 18px 0 6px; }
+  .rule { width: 150px; height: 1px; background: #c9bda3; margin: 22px auto; position: relative; }
+  .rule::after { content: "❦"; position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    background: #f5efe2; padding: 0 14px; color: #8a6d2f; font-size: 20px; }
+  .sub { font-family: "EB Garamond", serif; font-style: italic; font-size: 27px; color: #4a4238; }
+  .year { margin-top: 20px; font-size: 30px; letter-spacing: .3em; color: #7a0e15; }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <div class="card">
+    <div class="kicker">The Baptist</div>
+    <h1>Confession of Faith</h1>
+    <div class="rule"></div>
+    <div class="sub">All thirty-two chapters · every scripture proof inline · BSB · KJV · WEB</div>
+    <div class="year">MDCLXXXIX</div>
+  </div>
+</body>
+</html>

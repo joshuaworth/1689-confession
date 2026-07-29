@@ -111,6 +111,13 @@ TEMPLATE = r'''<!DOCTYPE html>
 <meta property="og:description" content="The complete text of the 1689 Second London Baptist Confession, with scripture proofs.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://1689.intentmesh.dev/">
+<meta property="og:image" content="https://1689.intentmesh.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Baptist Confession of Faith of 1689">
+<meta name="twitter:description" content="All 32 chapters with every scripture proof readable inline in BSB, KJV, and WEB. No ads, no account, public domain.">
+<meta name="twitter:image" content="https://1689.intentmesh.dev/og.png">
 <link rel="canonical" href="https://1689.intentmesh.dev/">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Book","name":"The Baptist Confession of Faith of 1689",
