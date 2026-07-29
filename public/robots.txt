@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://1689.intentmesh.dev/sitemap.xml

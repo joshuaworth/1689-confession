@@ -1,0 +1,13 @@
+{
+  "name": "confession-1689",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    { "pattern": "1689.intentmesh.dev", "custom_domain": true },
+    { "pattern": "intentmesh.dev/1689*", "zone_name": "intentmesh.dev" }
+  ]
+}
