@@ -1019,6 +1019,12 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     });
   }
 
+  // Tapping the empty top bar area scrolls to top (native-app convention)
+  document.querySelector('.topbar').addEventListener('click', function (e) {
+    if (e.target.closest('button, a')) { return; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   // ---- Reading progress + back-to-top ----
   var progress = document.getElementById('progress');
   var totop = document.getElementById('totop');
