@@ -234,23 +234,39 @@ main { padding-bottom: 120px; }
 .proofs .ref.open { opacity: 1; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 body.hide-proofs .proofs { display: none; }
 
-/* Inline proof text — set as a quotation, not a card */
-.prooftext { display: block; margin: 20px 0 28px; padding: 18px 0 14px;
-  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  animation: unfold .22s ease; }
-@keyframes unfold { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .prooftext { animation: none; } }
-.prooftext .pt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-.prooftext .pt-ref { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--oxblood); }
+/* Inline proof text — an in-flow scholium, typeset as if it were always there */
+.prooftext { display: grid; grid-template-rows: 0fr; position: relative; margin: 0;
+  padding-left: 20px;
+  transition: grid-template-rows .26s cubic-bezier(.25,1,.5,1), margin .26s cubic-bezier(.25,1,.5,1); }
+.prooftext::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--oxblood); transform: scaleY(0); transform-origin: top;
+  transition: transform .26s cubic-bezier(.25,1,.5,1); }
+.prooftext.open { grid-template-rows: 1fr; margin: 17px 0 22px; }
+.prooftext.open::before { transform: scaleY(1); }
+.prooftext .pt-inner { overflow: hidden; }
+.prooftext .pt-body { opacity: 0; transform: translateY(6px); filter: blur(2px);
+  transition: opacity .22s cubic-bezier(.25,1,.5,1) .07s, transform .22s cubic-bezier(.25,1,.5,1) .07s,
+    filter .22s cubic-bezier(.25,1,.5,1) .07s; }
+.prooftext.open .pt-body { opacity: 1; transform: none; filter: none; }
+.prooftext.closing { grid-template-rows: 0fr; margin: 0; transition-duration: .2s; }
+.prooftext.closing::before { transform: scaleY(0); transition-duration: .2s; }
+.prooftext.closing .pt-body { opacity: 0; transform: none; filter: none; transition: opacity .15s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .prooftext, .prooftext::before, .prooftext .pt-body { transition: opacity .15s ease !important; }
+  .prooftext .pt-body { transform: none; filter: none; }
+}
+.prooftext .pt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+.prooftext .pt-ref { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .1em; color: var(--oxblood); }
 .prooftext .pt-close { font: 500 12px var(--sans); background: none; border: none; color: var(--ink-soft);
   cursor: pointer; }
 .prooftext .pt-close:hover { color: var(--oxblood-bright); }
-.prooftext .vrow { margin-bottom: 14px; font-size: 19px; line-height: 1.65; }
+.prooftext .vrow { margin-bottom: 12px; font-size: 17.5px; line-height: 1.55; color: var(--ink); }
 .prooftext .vref { font: 600 11.5px var(--sans); color: var(--ink-soft); margin-right: 8px; white-space: nowrap; }
-.prooftext .vtr { font: 700 10.5px var(--sans); letter-spacing: .08em; color: var(--oxblood); margin-right: 8px; }
-.prooftext .parallel { margin-bottom: 18px; }
-.prooftext .parallel .vrow { margin-bottom: 6px; }
-.prooftext .pt-foot { font: 400 11.5px var(--sans); color: var(--ink-soft); margin-top: 8px; opacity: .75; }
+.prooftext .vtr { font: 700 10.5px var(--sans); letter-spacing: .1em; color: var(--oxblood); margin-right: 8px; }
+.prooftext .parallel { margin-bottom: 16px; }
+.prooftext .parallel .vrow { margin-bottom: 5px; }
+.prooftext .pt-foot { font: 400 11.5px var(--sans); color: var(--ink-soft); margin-top: 4px; opacity: .75; }
+
 
 /* Translation segmented control */
 .seg { display: flex; background: var(--paper-deep); border-radius: 10px; padding: 3px; }
@@ -438,16 +454,20 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     });
     var trLabel = mode === 'p' ? 'Parallel' : TR_NAMES[mode];
     panel.innerHTML =
+      '<div class="pt-inner"><div class="pt-body">' +
       '<div class="pt-head"><span class="pt-ref">' + ref + ' · ' + trLabel + '</span>' +
       '<button class="pt-close">Close ✕</button></div>' + rows +
-      '<div class="pt-foot">Berean Standard Bible and World English Bible are public domain; KJV is Crown copyright expired.</div>';
+      '<div class="pt-foot">Berean Standard Bible and World English Bible are public domain; KJV is Crown copyright expired.</div>' +
+      '</div></div>';
     panel.querySelector('.pt-close').addEventListener('click', function () { closePanel(panel); });
   }
 
   function closePanel(panel) {
     var btn = panel._refBtn;
     if (btn) { btn.classList.remove('open'); }
-    panel.remove();
+    panel.classList.remove('open');
+    panel.classList.add('closing');
+    setTimeout(function () { panel.remove(); }, 210);
   }
 
   document.querySelectorAll('.proofs .ref').forEach(function (btn) {
@@ -466,6 +486,8 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
         btn.classList.add('open');
         renderPanel(panel, ref, data);
         para.appendChild(panel);
+        void panel.offsetHeight;
+        panel.classList.add('open');
       });
     });
   });

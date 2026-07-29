@@ -117,9 +117,8 @@ const S3: React.FC = () => {
       </div>
       <div
         style={{
-          borderTop: `2px solid ${C.rule}`,
-          borderBottom: `2px solid ${C.rule}`,
-          padding: "34px 10px 30px",
+          borderLeft: `4px solid ${C.red}`,
+          padding: "6px 0 6px 36px",
           maxWidth: 1050,
           marginTop: 54,
           textAlign: "left",
