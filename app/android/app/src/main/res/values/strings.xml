@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">1689</string>
+    <string name="title_activity_main">1689</string>
+    <string name="package_name">com.intentmesh.confession1689</string>
+    <string name="custom_url_scheme">com.intentmesh.confession1689</string>
+</resources>

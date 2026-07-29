@@ -1,0 +1,16 @@
+{
+  "name": "confession-1689-app",
+  "private": true,
+  "scripts": {
+    "sync-site": "rm -rf www && cp -R ../public www && rm -f www/sw.js"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/android": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/assets": "^3.0.5"
+  }
+}

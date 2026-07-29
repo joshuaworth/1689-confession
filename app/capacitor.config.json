@@ -1,0 +1,7 @@
+{
+  "appId": "com.intentmesh.confession1689",
+  "appName": "1689 Confession",
+  "webDir": "www",
+  "ios": { "contentInset": "automatic" },
+  "backgroundColor": "#faf9f7"
+}
