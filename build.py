@@ -34,8 +34,25 @@ def render_paragraph(ch_num: int, p: dict, first: bool) -> str:
             f'<p>{text} {proofs}</p></div>')
 
 
+def apparatus_section(sid: str, kicker: str, title: str, paragraphs) -> str:
+    paras = "\n".join(
+        f'<div class="para" id="{sid}-p{i}">'
+        f'<a class="pnum" href="#{sid}-p{i}" aria-label="{title} paragraph {i}">{i}</a>'
+        f'<p>{html.escape(p).strip()}</p></div>'
+        for i, p in enumerate(paragraphs, 1))
+    return f'''
+<section class="chapter" id="{sid}">
+  <header class="ch-head">
+    <div class="ch-kicker">{kicker}</div>
+    <h2>{html.escape(title)}</h2>
+  </header>
+  {paras}
+</section>'''
+
+
 def build():
     data = json.loads(JSON_PATH.read_text())
+    apparatus = json.loads((HERE / "apparatus.json").read_text())
     chapters = data["chapters"]
     assert len(chapters) == 32, f"expected 32 chapters, got {len(chapters)}"
 
@@ -55,8 +72,40 @@ def build():
   {paras}
 </section>''')
 
+    pre = apparatus["preface"]
+    app = apparatus["appendix"]
+    sig = apparatus["signatories"]
+
+    preface_html = apparatus_section("preface", "Preface · 1677", pre["title"], pre["paragraphs"])
+    appendix_html = apparatus_section("appendix", "Appendix · 1677", app["title"], app["paragraphs"])
+
+    sig_rows = "\n".join(
+        f'<div class="sig"><span class="sig-name">{html.escape(s["name"])}</span>'
+        f'<span class="sig-church">{html.escape((s.get("role") or ""))}'
+        f'{" · " if s.get("role") and s.get("church") else ""}{html.escape(s.get("church") or "")}</span></div>'
+        for s in sig["names"])
+    signatories_html = f'''
+<section class="chapter" id="signatories">
+  <header class="ch-head">
+    <div class="ch-kicker">The General Assembly · 1689</div>
+    <h2>{html.escape(sig["title"])}</h2>
+  </header>
+  <p class="sig-note">{html.escape(sig.get("note") or "")}</p>
+  <div class="sig-grid">
+{sig_rows}
+  </div>
+  <p class="sig-sub">{html.escape(sig.get("subscription") or "")}</p>
+</section>'''
+
+    toc_items.append('<li class="toc-div" aria-hidden="true">Apparatus</li>')
+    toc_items.append('<li><a href="#preface"><span class="rn">✦</span> To the Reader (1677)</a></li>')
+    toc_items.append('<li><a href="#appendix"><span class="rn">✦</span> Appendix on Baptism</a></li>')
+    toc_items.append('<li><a href="#signatories"><span class="rn">✦</span> The Signatories</a></li>')
+
+    all_body = preface_html + "\n" + "\n".join(body_chapters) + "\n" + appendix_html + "\n" + signatories_html
+
     page = TEMPLATE.replace("{{TOC}}", "\n".join(toc_items)) \
-                   .replace("{{CHAPTERS}}", "\n".join(body_chapters))
+                   .replace("{{CHAPTERS}}", all_body)
     OUT.mkdir(exist_ok=True)
     (OUT / "index.html").write_text(page)
 
@@ -81,12 +130,24 @@ def build():
         "- [Proof texts JSON](https://1689.intentmesh.dev/verses.json): every cited verse in BSB, KJV, WEB\n")
 
     md = ["# The Baptist Confession of Faith of 1689\n"]
+    md.append(f"\n## {pre['title']} (1677 Preface)\n")
+    for p in pre["paragraphs"]:
+        md.append(f"\n{p}\n")
     for ch in chapters:
         md.append(f"\n## Chapter {ch['number']}: {ch['title']}\n")
         for p in ch["paragraphs"]:
             md.append(f"\n{p['number']}. {p['text']}\n")
             if p.get("proofs"):
                 md.append(f"   *( {p['proofs']} )*\n")
+    md.append(f"\n## {app['title']} (1677)\n")
+    for p in app["paragraphs"]:
+        md.append(f"\n{p}\n")
+    md.append(f"\n## {sig['title']} (1689)\n\n{sig.get('note') or ''}\n")
+    for s in sig["names"]:
+        role = f", {s['role']}" if s.get("role") else ""
+        church = f" — {s['church']}" if s.get("church") else ""
+        md.append(f"- {s['name']}{role}{church}\n")
+    md.append(f"\n*{sig.get('subscription') or ''}*\n")
     (OUT / "1689.md").write_text("".join(md))
 
     import shutil
@@ -399,6 +460,16 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
   .side li a { padding: 10px 10px; font-size: 15.5px; }
   #totop { display: none; }
 }
+/* ---------- Apparatus ---------- */
+.toc-div { font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--ink-soft); padding: 16px 10px 6px; list-style: none; }
+.sig-note { font-style: italic; color: var(--ink-soft); margin-bottom: 24px; }
+.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 32px; }
+@media (max-width: 700px) { .sig-grid { grid-template-columns: 1fr; } }
+.sig-name { display: block; font-family: var(--serif); font-size: 19px; color: var(--ink); }
+.sig-church { display: block; font: 400 13px var(--sans); color: var(--ink-soft); margin-top: 2px; }
+.sig-sub { font-style: italic; color: var(--ink-soft); margin-top: 26px; }
+
 /* ---------- Accessibility ---------- */
 .skip { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--oxblood);
   color: #fff; font: 600 14px var(--sans); padding: 10px 16px; border-radius: 0 0 8px 0; }
@@ -625,7 +696,8 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
       var chNum = parseInt(ch.id.slice(2), 10);
       var chTitle = ch.querySelector('h2').textContent;
       ch.querySelectorAll('.para').forEach(function (para) {
-        var pNum = para.id.split('p')[1];
+        var m = para.id.match(/p(\d+)$/);
+        var pNum = m ? m[1] : '';
         var clone = para.querySelector('p').cloneNode(true);
         var proofs = clone.querySelector('.proofs');
         if (proofs) { proofs.remove(); }
@@ -698,15 +770,15 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     var paras = buildParaIndex();
     var pHits = [];
     paras.forEach(function (p) {
+      var prefix = isNaN(p.ch) ? p.chTitle : ('Chapter ' + ROMAN[p.ch] + ' · ¶ ' + p.p + ' — ' + p.chTitle);
       var s = scoreText(normText(p.text), terms, phrase);
       if (s > 0) {
-        pHits.push({ kind: 'para', where: 'Chapter ' + ROMAN[p.ch] + ' · ¶ ' + p.p +
-                     ' — ' + p.chTitle,
+        pHits.push({ kind: 'para', where: isNaN(p.ch) ? p.chTitle + ' · ¶ ' + p.p : prefix,
                      html: excerpt(p.text, terms), el: p.el, score: s + 2 });
       }
       // also match on chapter title
       else if (scoreText(normText(p.chTitle), terms, phrase) > 0 && p.p === '1') {
-        pHits.push({ kind: 'para', where: 'Chapter ' + ROMAN[p.ch] + ' — ' + p.chTitle,
+        pHits.push({ kind: 'para', where: isNaN(p.ch) ? p.chTitle : ('Chapter ' + ROMAN[p.ch] + ' — ' + p.chTitle),
                      html: excerpt(p.text, []), el: p.el, score: 3 });
       }
     });
