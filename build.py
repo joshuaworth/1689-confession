@@ -382,7 +382,7 @@ body.hide-proofs .proofs { display: none; }
 .prooftext .pt-close { font: 500 12px var(--sans); background: none; border: none; color: var(--ink-soft);
   cursor: pointer; }
 .prooftext .pt-close:hover { color: var(--oxblood-bright); }
-.prooftext .vrow { margin-bottom: 12px; font-size: 17.5px; line-height: 1.55; color: var(--ink); }
+.prooftext .vrow { margin-bottom: 12px; font-size: 0.95em; line-height: 1.55; color: var(--ink); }
 .prooftext .vref { font: 600 11.5px var(--sans); color: var(--ink-soft); margin-right: 8px; white-space: nowrap; }
 .prooftext .vtr { font: 700 10.5px var(--sans); letter-spacing: .1em; color: var(--oxblood); margin-right: 8px; }
 .prooftext .parallel { margin-bottom: 16px; }
@@ -548,6 +548,13 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
         <button data-tr="k">KJV</button>
         <button data-tr="w">WEB</button>
         <button data-tr="p">Parallel</button>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Text size">
+        <button data-fs="16.5" style="font-size:11px">A</button>
+        <button data-fs="18.5" class="on" style="font-size:14px">A</button>
+        <button data-fs="21" style="font-size:17px">A</button>
       </div>
     </div>
     <h3>Contents</h3>
@@ -1019,6 +1026,18 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
       navigator.serviceWorker.register('/sw.js').catch(function () {});
     });
   }
+
+  // ---- Text size ----
+  var fsButtons = document.querySelectorAll('.seg button[data-fs]');
+  function setFs(px) {
+    document.body.style.fontSize = px + 'px';
+    fsButtons.forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-fs') === px); });
+    try { localStorage.setItem('fs', px); } catch (e) {}
+  }
+  fsButtons.forEach(function (b) {
+    b.addEventListener('click', function () { setFs(b.getAttribute('data-fs')); });
+  });
+  try { var savedFs = localStorage.getItem('fs'); if (savedFs) { setFs(savedFs); } } catch (e) {}
 
   // Tapping the empty top bar area scrolls to top (native-app convention)
   document.querySelector('.topbar').addEventListener('click', function (e) {
