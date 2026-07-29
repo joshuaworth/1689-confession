@@ -229,11 +229,11 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 #progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 55;
   background: var(--oxblood); transition: width .1s linear; }
 #totop { position: fixed; right: 22px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 40; width: 44px; height: 44px; border-radius: 50%;
-  border: 1px solid var(--rule); background: var(--paper); color: var(--ink-soft);
-  font: 500 17px var(--sans); cursor: pointer;
+  border: 1.5px solid var(--oxblood); background: var(--paper); color: var(--oxblood);
+  font: 600 17px var(--sans); cursor: pointer;
   box-shadow: 0 6px 20px var(--shadow); opacity: 0; pointer-events: none; transition: all .2s; }
 #totop.show { opacity: 1; pointer-events: auto; }
-#totop:hover { color: var(--oxblood); border-color: var(--oxblood); }
+#totop:hover { color: var(--oxblood-bright); border-color: var(--oxblood-bright); }
 
 /* ---------- Footer ---------- */
 .colophon { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding: 40px 0 72px; }
