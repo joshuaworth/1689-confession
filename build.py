@@ -28,9 +28,6 @@ def proof_links(proofs: str) -> str:
 
 def render_paragraph(ch_num: int, p: dict, first: bool) -> str:
     text = html.escape(p["text"]).strip()
-    if first and len(text) > 1:
-        # Drop cap on the first letter of the chapter
-        text = f'<span class="dropcap">{text[0]}</span>{text[1:]}'
     proofs = proof_links(p.get("proofs", ""))
     return (f'<div class="para" id="c{ch_num}p{p["number"]}">'
             f'<a class="pnum" href="#c{ch_num}p{p["number"]}" aria-label="Chapter {ch_num} paragraph {p["number"]}">{p["number"]}</a>'
@@ -52,7 +49,6 @@ def build():
         body_chapters.append(f'''
 <section class="chapter" id="ch{n}">
   <header class="ch-head">
-    <div class="ch-rule"><span class="fleuron">❦</span></div>
     <div class="ch-kicker">Chapter {ROMAN[n]}</div>
     <h2>{title}</h2>
   </header>
@@ -128,189 +124,205 @@ TEMPLATE = r'''<!DOCTYPE html>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%E2%9D%A6%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
 <style>
 :root {
-  --paper: #f5efe2;
-  --paper-deep: #ede4d0;
-  --ink: #241f1a;
-  --ink-soft: #4a4238;
-  --oxblood: #7a0e15;
-  --oxblood-bright: #9e131d;
+  --paper: #faf9f7;
+  --paper-deep: #f0eeea;
+  --ink: #1c1b1a;
+  --ink-soft: #5c5955;
+  --oxblood: #8a1016;
+  --oxblood-bright: #ad1620;
   --gold: #8a6d2f;
-  --rule: #c9bda3;
-  --shadow: rgba(36, 31, 26, .12);
+  --rule: #e2dfda;
+  --shadow: rgba(20, 18, 16, .08);
+  --sans: "Instrument Sans", -apple-system, sans-serif;
+  --serif: "EB Garamond", Georgia, serif;
 }
 [data-theme="dark"] {
-  --paper: #171310;
-  --paper-deep: #100d0b;
-  --ink: #e8dfcd;
-  --ink-soft: #b3a689;
-  --oxblood: #a80f18;
-  --oxblood-bright: #d41520;
+  --paper: #121212;
+  --paper-deep: #1c1b1a;
+  --ink: #e9e7e3;
+  --ink-soft: #a3a09a;
+  --oxblood: #c11722;
+  --oxblood-bright: #e02733;
   --gold: #c2a05a;
-  --rule: #3a322a;
-  --shadow: rgba(0, 0, 0, .5);
+  --rule: #2b2a28;
+  --shadow: rgba(0, 0, 0, .45);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: "EB Garamond", Georgia, serif;
+  font-family: var(--serif);
   background: var(--paper);
   color: var(--ink);
-  line-height: 1.65;
-  font-size: 19px;
+  line-height: 1.7;
+  font-size: 18.5px;
   transition: background .3s, color .3s;
 }
-/* Laid-paper grain */
-body::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .35;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 300px minmax(0, 720px); gap: 56px; max-width: 1140px; margin: 0 auto; padding: 0 28px; }
+.wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 280px minmax(0, 700px); gap: 56px; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-/* ---------- Frontispiece ---------- */
-.frontis {
-  grid-column: 1 / -1; text-align: center; padding: 88px 20px 64px;
-  border-bottom: 4px double var(--rule); margin-bottom: 40px; position: relative;
-}
-.frontis .smallrule { width: 120px; height: 1px; background: var(--rule); margin: 22px auto; position: relative; }
-.frontis .smallrule::after { content: "❦"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
-  background: var(--paper); padding: 0 12px; color: var(--gold); font-size: 15px; }
-.frontis .kicker { font-family: "IM Fell English SC", serif; letter-spacing: .35em; font-size: 15px; color: var(--oxblood); }
-.frontis h1 { font-family: "IM Fell English SC", serif; font-weight: 400; font-size: clamp(42px, 7vw, 84px);
-  line-height: 1.05; margin: 18px 0 8px; letter-spacing: .02em; }
-.frontis .sub { font-family: "IM Fell English", serif; font-style: italic; font-size: clamp(17px, 2.4vw, 22px);
-  color: var(--ink-soft); max-width: 560px; margin: 0 auto; }
-.frontis .imprint { font-family: "IM Fell English SC", serif; font-size: 14px; letter-spacing: .22em;
-  color: var(--ink-soft); margin-top: 30px; }
-.frontis .imprint b { color: var(--oxblood); font-weight: 400; }
+/* ---------- Top bar + hero ---------- */
+.topbar { grid-column: 1 / -1; position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; margin: 0 -24px; padding-left: 24px; padding-right: 16px;
+  background: color-mix(in srgb, var(--paper) 85%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule); }
+.wordmark { font: 700 19px/1 var(--sans); letter-spacing: -0.03em; color: var(--ink);
+  text-decoration: none; }
+.wordmark span { color: var(--oxblood); }
+.topbar-actions { display: flex; gap: 2px; }
+.tb-btn { width: 40px; height: 40px; display: grid; place-items: center; background: none;
+  border: none; border-radius: 10px; color: var(--ink); cursor: pointer; }
+.tb-btn svg { width: 19px; height: 19px; }
+.tb-btn:hover { background: var(--paper-deep); color: var(--oxblood); }
 
-/* ---------- Sidebar ---------- */
-.side { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 28px 4px 40px;
-  scrollbar-width: thin; }
-.side h3 { font-family: "IM Fell English SC", serif; font-weight: 400; font-size: 15px; letter-spacing: .3em;
-  color: var(--oxblood); margin-bottom: 14px; }
+.hero { grid-column: 1 / -1; padding: clamp(56px, 10vw, 120px) 0 clamp(40px, 6vw, 72px); }
+.hero-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--oxblood); margin-bottom: 20px; }
+.hero h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(56px, 13vw, 128px);
+  line-height: .95; letter-spacing: -0.015em; margin-bottom: 26px; text-wrap: balance; }
+.hero-sub { font: 400 16.5px/1.6 var(--sans); color: var(--ink-soft); max-width: 46ch; margin-bottom: 26px; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px 0; font: 500 12.5px var(--sans); color: var(--ink-soft); }
+.hero-meta span { display: flex; align-items: center; }
+.hero-meta span + span::before { content: ""; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--oxblood); margin: 0 10px; }
+
+/* ---------- Sidebar (desktop rail / mobile sheet) ---------- */
+.side { position: sticky; top: 61px; align-self: start; max-height: calc(100vh - 61px);
+  overflow-y: auto; padding: 28px 4px 40px; scrollbar-width: thin; }
+.side-close { display: none; }
+.side h3 { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--ink-soft); margin: 22px 0 10px; }
 .side ol { list-style: none; }
-.side li a { display: block; padding: 4.5px 10px; text-decoration: none; color: var(--ink-soft); font-size: 15.5px;
-  border-left: 2px solid transparent; transition: all .15s; }
-.side li a:hover { color: var(--oxblood-bright); border-left-color: var(--gold); }
-.side li a.active { color: var(--oxblood); border-left-color: var(--oxblood); background: linear-gradient(90deg, var(--shadow), transparent); }
-.side .rn { display: inline-block; width: 42px; font-family: "IM Fell English SC", serif; color: var(--gold); }
+.side li a { display: flex; gap: 10px; padding: 6px 10px; text-decoration: none; color: var(--ink-soft);
+  font: 400 14px/1.45 var(--sans); border-radius: 8px; transition: all .12s; }
+.side li a:hover { color: var(--ink); background: var(--paper-deep); }
+.side li a.active { color: var(--oxblood); background: var(--paper-deep); font-weight: 600; }
+.side .rn { flex: 0 0 26px; font: 600 12px/1.7 var(--sans); color: var(--oxblood); opacity: .55; }
+.side li a.active .rn { opacity: 1; }
 
 /* ---------- Controls ---------- */
-.controls { display: flex; gap: 8px; margin-bottom: 18px; }
-.controls button { font-family: "IM Fell English SC", serif; letter-spacing: .12em; font-size: 13px;
-  background: transparent; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: 3px;
-  padding: 7px 12px; cursor: pointer; transition: all .15s; }
+.controls { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.controls button { font: 500 13px var(--sans); background: transparent; color: var(--ink-soft);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 8px 13px; cursor: pointer; transition: all .12s; }
 .controls button:hover { color: var(--oxblood); border-color: var(--oxblood); }
 .controls button[aria-pressed="true"] { color: var(--paper); background: var(--oxblood); border-color: var(--oxblood); }
 
 /* ---------- Chapters ---------- */
 main { padding-bottom: 120px; }
-.chapter { padding-top: 30px; }
-.ch-head { text-align: center; margin: 46px 0 30px; }
-.ch-rule { height: 1px; background: var(--rule); position: relative; margin-bottom: 26px; }
-.ch-rule .fleuron { position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-  background: var(--paper); padding: 0 14px; color: var(--gold); font-size: 17px; }
-.ch-kicker { font-family: "IM Fell English SC", serif; font-size: 14px; letter-spacing: .34em; color: var(--gold); }
-.ch-head h2 { font-family: "IM Fell English SC", serif; font-weight: 400; font-size: clamp(27px, 4vw, 38px);
-  line-height: 1.15; color: var(--oxblood); margin-top: 6px; }
-.para { position: relative; margin: 0 0 20px; padding-left: 54px; }
-.para .pnum { position: absolute; left: 8px; top: 6px; font-family: "IM Fell English SC", serif; font-size: 15px;
-  color: var(--gold); text-decoration: none; }
+.chapter { border-top: 1px solid var(--rule); margin-top: 56px; padding-top: 44px; }
+.chapter:first-of-type { border-top: none; margin-top: 0; }
+.ch-head { margin: 0 0 28px; }
+.ch-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--oxblood); margin-bottom: 10px; }
+.ch-head h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(30px, 6vw, 44px);
+  line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+.para { position: relative; margin: 0 0 18px; }
+.para .pnum { font: 600 12px/1 var(--sans); color: var(--oxblood); text-decoration: none;
+  margin-right: 9px; }
 .para .pnum:hover { color: var(--oxblood-bright); }
-.para p { text-align: justify; hyphens: auto; }
-.dropcap { font-family: "IM Fell English SC", serif; float: left; font-size: 64px; line-height: .78;
-  padding: 6px 8px 0 0; color: var(--oxblood); }
-.proofs { font-size: 15px; color: var(--ink-soft); font-style: italic; }
-.proofs .ref { font: inherit; color: var(--ink-soft); background: none; border: none; padding: 0;
-  cursor: pointer; border-bottom: 1px dotted var(--gold); transition: color .15s; }
-.proofs .ref:hover { color: var(--oxblood-bright); }
-.proofs .ref.open { color: var(--oxblood); border-bottom-style: solid; border-bottom-color: var(--oxblood); }
+.para p { display: inline; }
+.para { display: block; }
+.para > p { display: inline; }
+.proofs { font: 400 13.5px var(--sans); color: var(--ink-soft); }
+.proofs .ref { font: 500 13.5px var(--sans); color: var(--oxblood); background: none; border: none;
+  padding: 0; cursor: pointer; opacity: .85; transition: opacity .12s; }
+.proofs .ref:hover { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+.proofs .ref.open { opacity: 1; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 body.hide-proofs .proofs { display: none; }
 
 /* Inline proof-text panel */
-.prooftext { margin: 10px 0 16px; padding: 14px 18px 12px; border-left: 3px solid var(--oxblood);
-  background: linear-gradient(180deg, var(--paper-deep), transparent 240%);
-  box-shadow: inset 0 1px 0 var(--rule), 0 2px 8px var(--shadow);
-  animation: unfold .28s ease; border-radius: 0 4px 4px 0; }
-@keyframes unfold { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
-.prooftext .pt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.prooftext .pt-ref { font-family: "IM Fell English SC", serif; font-size: 14px; letter-spacing: .16em; color: var(--oxblood); }
-.prooftext .pt-close { font: inherit; font-size: 13px; background: none; border: none; color: var(--ink-soft);
-  cursor: pointer; letter-spacing: .1em; }
+.prooftext { display: block; margin: 14px 0 20px; padding: 16px 18px 12px;
+  background: var(--paper-deep); border-left: 2px solid var(--oxblood);
+  animation: unfold .22s ease; border-radius: 12px; }
+@keyframes unfold { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .prooftext { animation: none; } }
+.prooftext .pt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.prooftext .pt-ref { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .1em; color: var(--oxblood); }
+.prooftext .pt-close { font: 500 12px var(--sans); background: none; border: none; color: var(--ink-soft);
+  cursor: pointer; }
 .prooftext .pt-close:hover { color: var(--oxblood-bright); }
-.prooftext .vrow { margin-bottom: 9px; font-size: 16.5px; line-height: 1.55; }
-.prooftext .vref { font-family: "IM Fell English SC", serif; font-size: 13px; color: var(--gold); margin-right: 6px; white-space: nowrap; }
-.prooftext .vtr { font-size: 11.5px; letter-spacing: .12em; color: var(--ink-soft); font-family: "IM Fell English SC", serif; margin-right: 6px; }
-.prooftext .parallel .vrow + .vrow { margin-top: -3px; }
-.prooftext .pt-foot { font-size: 12.5px; color: var(--ink-soft); font-style: italic; margin-top: 6px; }
+.prooftext .vrow { margin-bottom: 10px; font-size: 16.5px; line-height: 1.6; }
+.prooftext .vref { font: 600 11.5px var(--sans); color: var(--ink-soft); margin-right: 7px; white-space: nowrap; }
+.prooftext .vtr { font: 700 10px var(--sans); letter-spacing: .08em; color: var(--oxblood); margin-right: 7px; }
+.prooftext .parallel { margin-bottom: 12px; }
+.prooftext .parallel .vrow { margin-bottom: 5px; }
+.prooftext .pt-foot { font: 400 11.5px var(--sans); color: var(--ink-soft); margin-top: 4px; opacity: .8; }
 
 /* Translation segmented control */
-.seg { display: flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
-.seg button { flex: 1; font-family: "IM Fell English SC", serif; letter-spacing: .1em; font-size: 12.5px;
-  background: transparent; color: var(--ink-soft); border: none; padding: 7px 6px; cursor: pointer; transition: all .15s; }
-.seg button + button { border-left: 1px solid var(--rule); }
-.seg button:hover { color: var(--oxblood); }
-.seg button.on { color: var(--paper); background: var(--oxblood); }
+.seg { display: flex; background: var(--paper-deep); border-radius: 10px; padding: 3px; }
+.seg button { flex: 1; font: 500 12.5px var(--sans); background: transparent; color: var(--ink-soft);
+  border: none; border-radius: 7px; padding: 7px 8px; cursor: pointer; transition: all .12s; }
+.seg button:hover { color: var(--ink); }
+.seg button.on { color: var(--paper); background: var(--oxblood); font-weight: 600; }
 
 /* Search */
-.controls kbd { font-family: inherit; font-size: 11px; border: 1px solid var(--rule); border-radius: 3px;
-  padding: 1px 5px; margin-left: 4px; color: var(--ink-soft); }
-#searchOverlay { position: fixed; inset: 0; z-index: 60; background: rgba(15, 11, 8, .5);
-  backdrop-filter: blur(3px); display: none; }
+.controls kbd { font-family: var(--sans); font-size: 10.5px; border: 1px solid var(--rule); border-radius: 5px;
+  padding: 1px 5px; margin-left: 5px; color: var(--ink-soft); }
+#searchOverlay { position: fixed; inset: 0; z-index: 60; background: rgba(10, 9, 8, .45);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: none; }
 #searchOverlay.open { display: block; }
-.search-box { max-width: 660px; margin: 7vh auto 0; background: var(--paper); border: 1px solid var(--rule);
-  border-radius: 6px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 0 4px var(--shadow); }
-.search-head { display: flex; align-items: center; border-bottom: 3px double var(--rule); }
-.search-head .fleuron { padding: 0 0 0 18px; color: var(--gold); font-size: 16px; }
-#searchInput { flex: 1; font-family: "EB Garamond", serif; font-size: 20px; color: var(--ink);
-  background: transparent; border: none; outline: none; padding: 16px 18px; }
-#searchInput::placeholder { color: var(--ink-soft); font-style: italic; opacity: .7; }
-.search-esc { font-family: "IM Fell English SC", serif; font-size: 12px; color: var(--ink-soft);
-  border: 1px solid var(--rule); border-radius: 3px; padding: 2px 8px; margin-right: 16px; cursor: pointer;
+.search-box { max-width: 640px; margin: 8vh auto 0; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+.search-head { display: flex; align-items: center; border-bottom: 1px solid var(--rule); padding-left: 6px; }
+#searchInput { flex: 1; font: 400 17px var(--sans); color: var(--ink);
+  background: transparent; border: none; outline: none; padding: 17px 14px; }
+#searchInput::placeholder { color: var(--ink-soft); opacity: .65; }
+.search-esc { font: 500 11px var(--sans); color: var(--ink-soft);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; margin-right: 16px; cursor: pointer;
   background: none; }
-#searchResults { max-height: 62vh; overflow-y: auto; scrollbar-width: thin; }
-.sr-group { font-family: "IM Fell English SC", serif; font-size: 12px; letter-spacing: .28em;
-  color: var(--gold); padding: 12px 18px 4px; }
+#searchResults { max-height: 60vh; overflow-y: auto; scrollbar-width: thin; }
+.sr-group { font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .12em;
+  color: var(--ink-soft); padding: 14px 18px 5px; }
 .sr-item { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer;
-  padding: 10px 18px; border-left: 3px solid transparent; font-family: "EB Garamond", serif; color: var(--ink); }
-.sr-item .sr-where { font-family: "IM Fell English SC", serif; font-size: 12.5px; letter-spacing: .12em;
-  color: var(--oxblood); display: block; margin-bottom: 2px; }
-.sr-item .sr-text { font-size: 16px; line-height: 1.5; color: var(--ink-soft); display: block; }
+  padding: 10px 18px; border-left: 2px solid transparent; color: var(--ink); }
+.sr-item .sr-where { font: 600 12px var(--sans); color: var(--oxblood); display: block; margin-bottom: 2px; }
+.sr-item .sr-text { font: 400 15.5px/1.55 var(--serif); color: var(--ink-soft); display: block; }
 .sr-item mark { background: none; color: var(--oxblood); font-weight: 600; }
 .sr-item.active, .sr-item:hover { background: var(--paper-deep); border-left-color: var(--oxblood); }
-.sr-empty { padding: 26px 18px 30px; text-align: center; font-style: italic; color: var(--ink-soft); }
-.para.flash { animation: parflash 1.8s ease; }
-@keyframes parflash { 0% { background: rgba(138, 109, 47, .3); } 100% { background: transparent; } }
+.sr-empty { padding: 26px 18px 30px; text-align: center; font: 400 14px var(--sans); color: var(--ink-soft); }
+.para.flash { animation: parflash 1.6s ease; }
+@keyframes parflash { 0% { background: color-mix(in srgb, var(--oxblood) 14%, transparent); }
+  100% { background: transparent; } }
 @media (max-width: 700px) {
-  .search-box { margin: 3vh 10px 0; }
-  #searchInput { font-size: 17px; }
+  .search-box { margin: 2vh 10px 0; border-radius: 14px; }
+  #searchInput { font-size: 16px; }
 }
 
 /* Reading progress + back-to-top */
-#progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 50;
-  background: linear-gradient(90deg, var(--oxblood), var(--gold)); transition: width .1s linear; }
-#totop { position: fixed; right: 26px; bottom: 26px; z-index: 40; width: 46px; height: 46px; border-radius: 50%;
-  border: 1px solid var(--rule); background: var(--paper); color: var(--gold); font-size: 19px; cursor: pointer;
-  box-shadow: 0 4px 14px var(--shadow); opacity: 0; pointer-events: none; transition: all .25s; }
+#progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 55;
+  background: var(--oxblood); transition: width .1s linear; }
+#totop { position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--rule); background: var(--paper); color: var(--ink-soft);
+  font: 500 17px var(--sans); cursor: pointer;
+  box-shadow: 0 6px 20px var(--shadow); opacity: 0; pointer-events: none; transition: all .2s; }
 #totop.show { opacity: 1; pointer-events: auto; }
 #totop:hover { color: var(--oxblood); border-color: var(--oxblood); }
 
 /* ---------- Footer ---------- */
-.colophon { grid-column: 1 / -1; text-align: center; border-top: 4px double var(--rule);
-  padding: 44px 20px 70px; }
-.colophon .sdg { font-family: "IM Fell English SC", serif; font-size: 22px; letter-spacing: .3em; color: var(--oxblood); }
-.colophon p { font-size: 15px; color: var(--ink-soft); margin-top: 10px; }
+.colophon { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding: 40px 0 72px; }
+.colophon .sdg { font-family: var(--serif); font-style: italic; font-size: 19px; color: var(--oxblood); }
+.colophon p { font: 400 13px/1.7 var(--sans); color: var(--ink-soft); margin-top: 10px; max-width: 60ch; }
 
-/* ---------- Responsive ---------- */
+/* ---------- Responsive: contents becomes a full-screen sheet ---------- */
 @media (max-width: 900px) {
   .wrap { grid-template-columns: 1fr; gap: 0; }
-  .side { position: relative; max-height: none; border-bottom: 1px solid var(--rule); margin-bottom: 8px; }
-  .side ol { columns: 2; column-gap: 20px; }
   body { font-size: 17.5px; }
-  .para { padding-left: 40px; }
+  .side { position: fixed; inset: 0; z-index: 65; max-height: none; background: var(--paper);
+    padding: 64px 20px 40px; display: none; overflow-y: auto; }
+  .side.open { display: block; animation: sheetin .18s ease; }
+  @keyframes sheetin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .side-close { display: grid; place-items: center; position: absolute; top: 12px; right: 14px;
+    width: 40px; height: 40px; background: var(--paper-deep); border: none; border-radius: 10px;
+    color: var(--ink); font: 500 15px var(--sans); cursor: pointer; }
+  .side li a { padding: 10px 10px; font-size: 15.5px; }
+  #totop { display: none; }
 }
 @media print {
   .side, .controls, body::before { display: none !important; }
@@ -323,15 +335,30 @@ body.hide-proofs .proofs { display: none; }
 <body>
 <div class="wrap">
 
-  <header class="frontis">
-    <div class="kicker">Put forth by the Elders and Brethren</div>
-    <h1>The Baptist<br>Confession of Faith</h1>
-    <div class="smallrule"></div>
-    <p class="sub">of many Congregations of Christians (baptized upon Profession of their Faith) in London and the Country; adopted by the General Assembly of 1689.</p>
-    <div class="imprint">London · Printed in the Year <b>MDCLXXXIX</b></div>
+  <header class="topbar">
+    <a class="wordmark" href="#top">1689<span>.</span></a>
+    <nav class="topbar-actions" aria-label="Site controls">
+      <button class="tb-btn" id="tbSearch" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="tb-btn" id="tbTheme" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+      <button class="tb-btn" id="tbContents" aria-label="Contents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
+    </nav>
   </header>
 
-  <nav class="side" aria-label="Table of contents">
+  <section class="hero" id="top">
+    <p class="hero-kicker">The Second London Baptist Confession · 1689</p>
+    <h1>The Baptist<br>Confession<br>of&nbsp;Faith</h1>
+    <p class="hero-sub">Thirty-two chapters. Every scripture proof one tap away, in three public-domain translations. No ads, no account — just the text.</p>
+    <div class="hero-meta"><span>32 chapters</span><span>770 proofs</span><span>BSB · KJV · WEB</span><span>Public domain</span></div>
+  </section>
+
+  <nav class="side" id="side" aria-label="Table of contents">
+    <button class="side-close" id="sideClose" aria-label="Close contents">✕</button>
     <div class="controls">
       <button id="searchBtn" aria-label="Search (press slash)">Search <kbd>/</kbd></button>
       <button id="proofsBtn" aria-pressed="true">Scripture Proofs</button>
@@ -363,12 +390,11 @@ body.hide-proofs .proofs { display: none; }
 
 </div>
 <div id="progress"></div>
-<button id="totop" aria-label="Back to top">❦</button>
+<button id="totop" aria-label="Back to top">↑</button>
 
 <div id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search the confession">
   <div class="search-box">
     <div class="search-head">
-      <span class="fleuron">❦</span>
       <input id="searchInput" type="search" autocomplete="off" spellcheck="false"
              placeholder="Search the confession and its scripture proofs&hellip;">
       <button class="search-esc" id="searchEsc">esc</button>
@@ -663,6 +689,22 @@ body.hide-proofs .proofs { display: none; }
 
   document.getElementById('searchBtn').addEventListener('click', openSearch);
   document.getElementById('searchEsc').addEventListener('click', closeSearch);
+
+  // Top bar + mobile contents sheet
+  var side = document.getElementById('side');
+  document.getElementById('tbSearch').addEventListener('click', openSearch);
+  document.getElementById('tbTheme').addEventListener('click', function () {
+    setTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+  });
+  document.getElementById('tbContents').addEventListener('click', function () {
+    side.classList.toggle('open');
+  });
+  document.getElementById('sideClose').addEventListener('click', function () {
+    side.classList.remove('open');
+  });
+  side.addEventListener('click', function (e) {
+    if (e.target.closest('a')) { side.classList.remove('open'); }
+  });
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) { closeSearch(); } });
 
   var debounce = null;
