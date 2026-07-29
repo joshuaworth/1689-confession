@@ -436,7 +436,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 /* Reading progress + back-to-top */
 #progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 55;
   background: var(--oxblood); transition: width .1s linear; }
-#totop { position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 44px; height: 44px; border-radius: 50%;
+#totop { position: fixed; right: 22px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 40; width: 44px; height: 44px; border-radius: 50%;
   border: 1px solid var(--rule); background: var(--paper); color: var(--ink-soft);
   font: 500 17px var(--sans); cursor: pointer;
   box-shadow: 0 6px 20px var(--shadow); opacity: 0; pointer-events: none; transition: all .2s; }
@@ -460,7 +460,6 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     width: 40px; height: 40px; background: var(--paper-deep); border: none; border-radius: 10px;
     color: var(--ink); font: 500 15px var(--sans); cursor: pointer; }
   .side li a { padding: 10px 10px; font-size: 15.5px; }
-  #totop { display: none; }
 }
 /* ---------- Apparatus ---------- */
 .toc-div { font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .14em;
