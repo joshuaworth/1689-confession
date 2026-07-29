@@ -232,12 +232,37 @@ const S5: React.FC = () => {
   );
 };
 
+const S55: React.FC = () => {
+  const frame = useCurrentFrame();
+  const items = [
+    "To the Judicious and Impartial Reader \u00b7 the 1677 preface",
+    "An Appendix Concerning Baptism \u00b7 in full",
+    "The Ministers and Messengers \u00b7 all 37 signatories",
+  ];
+  return (
+    <Scene vo="vo/s55.mp3">
+      <Line>The whole book — not just the chapters.</Line>
+      <div style={{ marginTop: 54, textAlign: "left" }}>
+        {items.map(function (t, i) {
+          const s = spring({ frame: frame - 30 - i * 18, fps: 30, config: { damping: 16 } });
+          return (
+            <div key={t} style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1.9, color: C.ink,
+              opacity: s, transform: "translateY(" + (1 - s) * 22 + "px)" }}>
+              <span style={{ color: C.red, marginRight: 16 }}>&mdash;</span>{t}
+            </div>
+          );
+        })}
+      </div>
+    </Scene>
+  );
+};
+
 const S6: React.FC = () => {
   const frame = useCurrentFrame();
   const stats = [
     ["32", "Chapters"],
     ["770", "Scripture proofs"],
-    ["3", "Translations"],
+    ["1677", "Apparatus, complete"],
     ["0", "Ads · Accounts · Cost"],
   ];
   return (
@@ -301,7 +326,7 @@ const S7: React.FC = () => {
         1689<span style={{ color: C.red }}>.</span>intentmesh<span style={{ color: C.red }}>.</span>dev
       </div>
       <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 27, color: C.soft, marginTop: 26, opacity: url }}>
-        Free · No ads · No account · Public domain
+        Free · Offline · No account · Public domain
       </div>
     </Scene>
   );
@@ -315,6 +340,7 @@ export const Commercial: React.FC = () => (
       <Series.Sequence durationInFrames={timing.s3}><S3 /></Series.Sequence>
       <Series.Sequence durationInFrames={timing.s4}><S4 /></Series.Sequence>
       <Series.Sequence durationInFrames={timing.s5}><S5 /></Series.Sequence>
+      <Series.Sequence durationInFrames={timing.s55}><S55 /></Series.Sequence>
       <Series.Sequence durationInFrames={timing.s6}><S6 /></Series.Sequence>
       <Series.Sequence durationInFrames={timing.s7}><S7 /></Series.Sequence>
     </Series>
