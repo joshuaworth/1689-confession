@@ -241,7 +241,7 @@ const S55: React.FC = () => {
   ];
   return (
     <Scene vo="vo/s55.mp3">
-      <Line>The whole book — not just the chapters.</Line>
+      <Line>The whole book. Not just the chapters.</Line>
       <div style={{ marginTop: 54, textAlign: "left" }}>
         {items.map(function (t, i) {
           const s = spring({ frame: frame - 30 - i * 18, fps: 30, config: { damping: 16 } });
