@@ -272,7 +272,7 @@ TEMPLATE = r'''<!DOCTYPE html>
   --shadow: rgba(0, 0, 0, .45);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-padding-top: 74px; }
 body {
   font-family: var(--serif);
   background: var(--paper);
@@ -477,7 +477,6 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
   color: #fff; font: 600 14px var(--sans); padding: 10px 16px; border-radius: 0 0 8px 0; }
 .skip:focus { left: 0; }
 :focus-visible { outline: 2px solid var(--oxblood); outline-offset: 2px; border-radius: 2px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 /* Copy-link toast */
 #toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px);
