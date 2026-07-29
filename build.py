@@ -21,7 +21,7 @@ def proof_links(proofs: str) -> str:
     if not proofs or not proofs.strip():
         return ""
     parts = [p.strip() for p in re.split(r"[;]", proofs) if p.strip()]
-    links = [f'<button class="ref" data-ref="{html.escape(ref, quote=True)}">{html.escape(ref)}</button>'
+    links = [f'<button class="ref" data-ref="{html.escape(ref, quote=True)}" aria-expanded="false">{html.escape(ref)}</button>'
              for ref in parts]
     return '<span class="proofs">( ' + '; '.join(links) + ' )</span>'
 
@@ -92,8 +92,57 @@ def build():
     import shutil
     shutil.copy2(HERE / "confession.json", OUT / "confession.json")
 
+    # ---- PWA: manifest + versioned service worker ----
+    (OUT / "manifest.webmanifest").write_text(json.dumps({
+        "name": "The Baptist Confession of Faith of 1689",
+        "short_name": "1689",
+        "description": "The complete Second London Baptist Confession with scripture proofs in BSB, KJV, and WEB.",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#faf9f7",
+        "theme_color": "#faf9f7",
+        "icons": [
+            {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+        ],
+    }, indent=1))
+
+    import hashlib
+    version = hashlib.sha1(page.encode() + (OUT / "verses.json").read_bytes()[:4096]).hexdigest()[:10]
+    fonts = sorted(p.name for p in (OUT / "fonts").glob("*.woff2")) if (OUT / "fonts").exists() else []
+    precache = (["/", "/verses.json?v=2", "/confession.json", "/manifest.webmanifest",
+                 "/icons/icon-192.png", "/icons/icon-512.png"]
+                + [f"/fonts/{f}" for f in fonts])
+    (OUT / "sw.js").write_text(
+        "const CACHE = 'c1689-" + version + "';\n"
+        "const ASSETS = " + json.dumps(precache) + ";\n"
+        "self.addEventListener('install', (e) => {\n"
+        "  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));\n"
+        "});\n"
+        "self.addEventListener('activate', (e) => {\n"
+        "  e.waitUntil(caches.keys().then((keys) =>\n"
+        "    Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))\n"
+        "  ).then(() => self.clients.claim()));\n"
+        "});\n"
+        "self.addEventListener('fetch', (e) => {\n"
+        "  const req = e.request;\n"
+        "  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;\n"
+        "  e.respondWith(\n"
+        "    caches.match(req).then((hit) => {\n"
+        "      const net = fetch(req).then((res) => {\n"
+        "        if (res && res.ok) {\n"
+        "          const copy = res.clone();\n"
+        "          caches.open(CACHE).then((c) => c.put(req, copy));\n"
+        "        }\n"
+        "        return res;\n"
+        "      }).catch(() => hit || (req.mode === 'navigate' ? caches.match('/') : undefined));\n"
+        "      return hit || net;\n"
+        "    })\n"
+        "  );\n"
+        "});\n")
+
     print(f"built {OUT / 'index.html'} ({len(page)//1024} KB, {len(chapters)} chapters) "
-          f"+ robots, sitemap, llms.txt, 1689.md, confession.json")
+          f"+ robots, sitemap, llms.txt, 1689.md, confession.json, manifest, sw ({version})")
 
 
 TEMPLATE = r'''<!DOCTYPE html>
@@ -121,12 +170,21 @@ TEMPLATE = r'''<!DOCTYPE html>
 "inLanguage":"en","isAccessibleForFree":true,"license":"https://creativecommons.org/publicdomain/mark/1.0/",
 "url":"https://1689.intentmesh.dev/","publisher":{"@type":"Organization","name":"IntentMesh","url":"https://intentmesh.dev"}}
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%E2%9D%A6%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231c1b1a'/%3E%3Ctext x='46' y='60' text-anchor='middle' font-family='-apple-system,Arial,sans-serif' font-weight='800' font-size='36' fill='%23f2ede3'%3E1689%3C/text%3E%3Ccircle cx='84' cy='56' r='7' fill='%23d92531'/%3E%3C/svg%3E">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preload" href="/fonts/EBGaramond-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/InstrumentSans-400.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="theme-color" id="metaTheme" content="#faf9f7">
 <style>
+@font-face { font-family: 'EB Garamond'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/EBGaramond-400.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-style: italic; font-weight: 400; font-display: swap; src: url('/fonts/EBGaramond-400i.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/EBGaramond-500.woff2') format('woff2'); }
+@font-face { font-family: 'EB Garamond'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/EBGaramond-600.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/InstrumentSans-400.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/InstrumentSans-500.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/InstrumentSans-600.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/InstrumentSans-700.woff2') format('woff2'); }
 :root {
   --paper: #faf9f7;
   --paper-deep: #f0eeea;
@@ -213,7 +271,8 @@ body {
 
 /* ---------- Chapters ---------- */
 main { padding-bottom: 120px; }
-.chapter { border-top: 1px solid var(--rule); margin-top: 56px; padding-top: 44px; }
+.chapter { border-top: 1px solid var(--rule); margin-top: 56px; padding-top: 44px;
+  content-visibility: auto; contain-intrinsic-size: auto 3200px; }
 .chapter:first-of-type { border-top: none; margin-top: 0; }
 .ch-head { margin: 0 0 28px; }
 .ch-kicker { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .14em;
@@ -340,15 +399,46 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
   .side li a { padding: 10px 10px; font-size: 15.5px; }
   #totop { display: none; }
 }
+/* ---------- Accessibility ---------- */
+.skip { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--oxblood);
+  color: #fff; font: 600 14px var(--sans); padding: 10px 16px; border-radius: 0 0 8px 0; }
+.skip:focus { left: 0; }
+:focus-visible { outline: 2px solid var(--oxblood); outline-offset: 2px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Copy-link toast */
+#toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(12px);
+  background: var(--ink); color: var(--paper); font: 500 13px var(--sans); padding: 9px 16px;
+  border-radius: 8px; opacity: 0; pointer-events: none; transition: all .2s ease; z-index: 80; }
+#toast.show { opacity: 1; transform: translateX(-50%); }
+
+/* Desktop hover preview */
+.pt-pop { position: fixed; z-index: 75; max-width: 420px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 10px; padding: 13px 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.18); transform-origin: top left;
+  animation: popin .15s cubic-bezier(.25,1,.5,1); }
+@keyframes popin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+.pt-pop .vrow { font-size: 15.5px; line-height: 1.55; margin-bottom: 8px; font-family: var(--serif); }
+.pt-pop .vref { font: 600 10.5px var(--sans); color: var(--ink-soft); margin-right: 7px; }
+.pt-pop .pp-hint { font: 400 10.5px var(--sans); color: var(--ink-soft); opacity: .7; }
+
 @media print {
-  .side, .controls, body::before { display: none !important; }
-  .wrap { display: block; }
+  .topbar, .side, .controls, #progress, #totop, #searchOverlay, .skip, #toast { display: none !important; }
+  .wrap { display: block; max-width: none; padding: 0; }
+  @page { margin: 18mm; }
   body { font-size: 11pt; background: #fff; color: #000; }
-  .proofs { display: block !important; }
+  .hero { padding: 0 0 24px; }
+  .hero h1, .ch-head h2, .hero-kicker, .ch-kicker { color: #000; }
+  .chapter { break-before: page; border-top: none; margin-top: 0; content-visibility: visible;
+    contain-intrinsic-size: none; }
+  .chapter:first-of-type { break-before: auto; }
+  .proofs { display: inline !important; }
+  .proofs .ref { color: #444; }
 }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the confession</a>
 <div class="wrap">
 
   <header class="topbar">
@@ -394,7 +484,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     </ol>
   </nav>
 
-  <main>
+  <main id="main">
 {{CHAPTERS}}
   </main>
 
@@ -407,6 +497,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 
 </div>
 <div id="progress"></div>
+<div id="toast" role="status"></div>
 <button id="totop" aria-label="Back to top">↑</button>
 
 <div id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search the confession">
@@ -464,7 +555,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 
   function closePanel(panel) {
     var btn = panel._refBtn;
-    if (btn) { btn.classList.remove('open'); }
+    if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
     panel.classList.remove('open');
     panel.classList.add('closing');
     setTimeout(function () { panel.remove(); }, 210);
@@ -488,6 +579,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
         para.appendChild(panel);
         void panel.offsetHeight;
         panel.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
       });
     });
   });
@@ -788,6 +880,73 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     } else if (e.key === 'Escape' && overlay.classList.contains('open')) { closeSearch(); }
   });
 
+  // ---- Copy-link paragraph numbers ----
+  var toast = document.getElementById('toast');
+  var toastTimer = null;
+  document.querySelectorAll('.pnum').forEach(function (a) {
+    a.addEventListener('click', function () {
+      try {
+        navigator.clipboard.writeText(location.origin + location.pathname + a.getAttribute('href'));
+        toast.textContent = 'Link copied';
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+      } catch (e) {}
+    });
+  });
+
+  // ---- Desktop hover previews (Wikipedia-style intent delay) ----
+  var pop = null, popTimer = null, popFor = null, lastPop = 0;
+  function hidePop() { if (pop) { pop.remove(); pop = null; popFor = null; } }
+  if (window.matchMedia('(hover: hover) and (min-width: 1100px)').matches) {
+    document.querySelectorAll('.proofs .ref').forEach(function (btn) {
+      btn.addEventListener('mouseenter', function () {
+        clearTimeout(popTimer);
+        var delay = (Date.now() - lastPop < 45000) ? 150 : 550;
+        popTimer = setTimeout(function () {
+          verses().then(function (all) {
+            var data = all[btn.getAttribute('data-ref')];
+            if (!data || para(btn).querySelector('.prooftext')) { return; }
+            hidePop();
+            pop = document.createElement('div');
+            pop.className = 'pt-pop';
+            var html = '';
+            data.slice(0, 3).forEach(function (v) {
+              var tr = mode === 'p' ? 'b' : mode;
+              var t = v[tr] || v.b || v.k || v.w;
+              if (t) { html += '<div class="vrow"><span class="vref">' + v.r + '</span>' + t + '</div>'; }
+            });
+            if (data.length > 3) { html += '<div class="pp-hint">+' + (data.length - 3) + ' more — click to pin</div>'; }
+            pop.innerHTML = html;
+            document.body.appendChild(pop);
+            var r = btn.getBoundingClientRect();
+            var x = Math.max(12, Math.min(r.left, window.innerWidth - 444));
+            var y = r.bottom + 8;
+            if (y + pop.offsetHeight > window.innerHeight - 14) { y = r.top - pop.offsetHeight - 8; }
+            pop.style.left = x + 'px';
+            pop.style.top = y + 'px';
+            popFor = btn;
+            lastPop = Date.now();
+          });
+        }, delay);
+      });
+      btn.addEventListener('mouseleave', function () {
+        clearTimeout(popTimer);
+        setTimeout(function () { if (popFor === btn) { hidePop(); } }, 80);
+      });
+      btn.addEventListener('click', function () { clearTimeout(popTimer); hidePop(); });
+    });
+    window.addEventListener('scroll', hidePop, { passive: true });
+  }
+  function para(el) { return el.closest('.para'); }
+
+  // ---- Offline (PWA) ----
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+
   // ---- Reading progress + back-to-top ----
   var progress = document.getElementById('progress');
   var totop = document.getElementById('totop');
@@ -829,6 +988,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
         Object.values(links).forEach(function (a) { a.classList.remove('active'); });
         var a = links[en.target.id];
         if (a) { a.classList.add('active'); }
+        try { history.replaceState(null, '', '#' + en.target.id); } catch (e) {}
       }
     });
   }, { rootMargin: '-20% 0px -70% 0px' });
