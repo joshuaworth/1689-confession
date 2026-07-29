@@ -1,4 +1,4 @@
-const CACHE = 'c1689-60c1748009';
+const CACHE = 'c1689-f4ae9391ba';
 const ASSETS = ["/", "/verses.json?v=2", "/confession.json", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/fonts/EBGaramond-400.woff2", "/fonts/EBGaramond-400i.woff2", "/fonts/EBGaramond-500.woff2", "/fonts/EBGaramond-600.woff2", "/fonts/InstrumentSans-400.woff2", "/fonts/InstrumentSans-500.woff2", "/fonts/InstrumentSans-600.woff2", "/fonts/InstrumentSans-700.woff2"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

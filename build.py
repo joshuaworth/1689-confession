@@ -460,7 +460,7 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
     width: 40px; height: 40px; background: var(--paper-deep); border: none; border-radius: 10px;
     color: var(--ink); font: 500 15px var(--sans); cursor: pointer; }
   .side li a { padding: 10px 10px; font-size: 15.5px; }
-  #totop { bottom: calc(84px + env(safe-area-inset-bottom)); right: 16px; }
+  #totop { bottom: calc(48px + env(safe-area-inset-bottom)); right: 16px; }
 }
 /* ---------- Apparatus ---------- */
 .toc-div { font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .14em;
