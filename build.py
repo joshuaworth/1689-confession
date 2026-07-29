@@ -125,9 +125,7 @@ TEMPLATE = r'''<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="metaTheme" content="#faf9f7">
 <style>
 :root {
   --paper: #faf9f7;
@@ -785,6 +783,9 @@ body.locked { position: fixed; left: 0; right: 0; width: 100%; }
 
   function setTheme(dark) {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    var mt = document.getElementById('metaTheme');
+    if (mt) { mt.setAttribute('content', dark ? '#121212' : '#faf9f7'); }
     themeBtn.setAttribute('aria-pressed', String(dark));
     try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
   }
