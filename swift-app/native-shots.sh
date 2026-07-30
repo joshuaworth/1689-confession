@@ -34,6 +34,9 @@ capture() {  # $1 = name; preceding seeds already applied
 fresh() {
   xcrun simctl terminate "$DEV" "$BUNDLE" 2>/dev/null || true
   xcrun simctl uninstall "$DEV" "$BUNDLE" 2>/dev/null || true
+  for key in seedOverlay seedProof seedSearchQuery pos theme bm nt; do
+    xcrun simctl spawn "$DEV" defaults delete "$BUNDLE" "$key" 2>/dev/null || true
+  done
   xcrun simctl install "$DEV" "$APP"
 }
 
