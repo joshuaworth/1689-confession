@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import TipKit
 
 // MARK: - Paragraph
 
@@ -7,6 +8,7 @@ struct ParagraphView: View {
     @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sizeCategory) private var sizeCategory
 
     let paragraphID: String
     let label: String
@@ -22,6 +24,10 @@ struct ParagraphView: View {
     @State private var companionAction: CompanionAction?
 
     private let library = Library.shared
+    private let menuTip = ParagraphMenuTip()
+
+    /// The tip belongs on the first paragraph a reader meets, and nowhere else.
+    private var isFirstParagraph: Bool { paragraphID == "c1p1" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -82,9 +88,21 @@ struct ParagraphView: View {
         }
     }
 
+    /// TipKit's optional-tip overload is iOS 26 and its original form is
+    /// obsoleted, so the tip is attached only where the SDK allows it. Readers
+    /// on older systems simply never see it.
+    @ViewBuilder
     private var body_text: some View {
+        if #available(iOS 18.4, *), isFirstParagraph {
+            body_core.popoverTip(menuTip)
+        } else {
+            body_core
+        }
+    }
+
+    private var body_core: some View {
         Text(attributed)
-            .lineSpacing(CGFloat(store.bodySize) * 0.55)
+            .lineSpacing(CGFloat(store.bodySize(for: sizeCategory)) * 0.55)
             .tint(Theme.red)
             .accessibilityAction(named: store.isBookmarked(paragraphID) ? "Remove Bookmark" : "Bookmark") {
                 store.toggleBookmark(paragraphID)
@@ -166,7 +184,7 @@ struct ParagraphView: View {
         var output = AttributedString()
 
         var pnum = AttributedString("\(number)  ")
-        pnum.font = Fonts.sans(store.bodySize * 0.62, weight: 600)
+        pnum.font = Fonts.sans(store.bodySize(for: sizeCategory) * 0.62, weight: 600)
         pnum.foregroundColor = Theme.red
         if store.isBookmarked(paragraphID) {
             pnum.underlineStyle = .single
@@ -174,19 +192,19 @@ struct ParagraphView: View {
         output += pnum
 
         var body = AttributedString(text)
-        body.font = Fonts.serif(store.bodySize)
+        body.font = Fonts.serif(store.bodySize(for: sizeCategory))
         body.foregroundColor = Theme.ink(scheme)
         output += body
 
         if store.showProofs && !proofRefs.isEmpty {
             var open = AttributedString("  ( ")
-            open.font = Fonts.sans(store.bodySize * 0.72)
+            open.font = Fonts.sans(store.bodySize(for: sizeCategory) * 0.72)
             open.foregroundColor = Theme.inkSoft(scheme)
             output += open
 
             for (index, ref) in proofRefs.enumerated() {
                 var link = AttributedString(ref)
-                link.font = Fonts.sans(store.bodySize * 0.72, weight: expandedRef == ref ? 700 : 500)
+                link.font = Fonts.sans(store.bodySize(for: sizeCategory) * 0.72, weight: expandedRef == ref ? 700 : 500)
                 link.foregroundColor = Theme.red
                 if let encoded = ref.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
                    let url = URL(string: "proof://\(encoded)") {
@@ -195,13 +213,13 @@ struct ParagraphView: View {
                 output += link
                 if index < proofRefs.count - 1 {
                     var separator = AttributedString("; ")
-                    separator.font = Fonts.sans(store.bodySize * 0.72)
+                    separator.font = Fonts.sans(store.bodySize(for: sizeCategory) * 0.72)
                     separator.foregroundColor = Theme.inkSoft(scheme)
                     output += separator
                 }
             }
             var close = AttributedString(" )")
-            close.font = Fonts.sans(store.bodySize * 0.72)
+            close.font = Fonts.sans(store.bodySize(for: sizeCategory) * 0.72)
             close.foregroundColor = Theme.inkSoft(scheme)
             output += close
         }
@@ -214,6 +232,7 @@ struct ParagraphView: View {
 struct VerseScholium: View {
     @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.sizeCategory) private var sizeCategory
     let reference: String
     let verses: [Verse]
     var readChapter: (() -> Void)?
@@ -289,7 +308,7 @@ struct VerseScholium: View {
         Text("\(reference)  ").font(Fonts.sans(11.5, weight: 600)).foregroundColor(Theme.inkSoft(scheme))
     }
     private func textSpan(_ text: String) -> Text {
-        Text(text).font(Fonts.serif(max(14, store.bodySize * 0.9))).foregroundColor(Theme.ink(scheme))
+        Text(text).font(Fonts.serif(max(14, store.bodySize(for: sizeCategory) * 0.9))).foregroundColor(Theme.ink(scheme))
     }
 }
 

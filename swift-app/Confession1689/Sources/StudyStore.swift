@@ -109,6 +109,24 @@ final class StudyStore: ObservableObject {
         SyncStore.shared.recordNote(id, text: text?.isEmpty == true ? nil : text)
     }
 
+    /// Bookmarks made from the widget land in the shared container; adopt them.
+    func adoptPendingBookmarks() {
+        guard let shared = UserDefaults(suiteName: "group.com.intentmesh.confession1689"),
+              let pending = shared.stringArray(forKey: "pendingBookmarks"), !pending.isEmpty
+        else { return }
+        for id in pending where !bookmarks.contains(id) {
+            bookmarks.append(id)
+            SyncStore.shared.recordBookmark(id, added: true)
+        }
+        shared.removeObject(forKey: "pendingBookmarks")
+    }
+
+    /// Values the widget shows but cannot compute for itself.
+    func publishToWidget() {
+        guard let shared = UserDefaults(suiteName: "group.com.intentmesh.confession1689") else { return }
+        shared.set(streak, forKey: "streak")
+    }
+
     /// Folds iCloud state in and pushes local-only records back up.
     func syncWithCloud() {
         let merged = SyncStore.shared.merge(localBookmarks: bookmarks, localNotes: notes)
@@ -120,6 +138,29 @@ final class StudyStore: ObservableObject {
 
     /// Reading sizes matching the site's five steps.
     var bodySize: CGFloat { [16.5, 18.5, 21, 24, 27][max(0, min(4, fontStep))] }
+
+    /// The five steps are the reader's own choice, but a reader who has set a
+    /// system text size larger than default means it — scale with them, and
+    /// keep scaling into the accessibility sizes rather than stopping short.
+    func bodySize(for category: ContentSizeCategory) -> CGFloat {
+        let multiplier: CGFloat
+        switch category {
+        case .extraSmall: multiplier = 0.85
+        case .small: multiplier = 0.9
+        case .medium: multiplier = 0.95
+        case .large: multiplier = 1.0
+        case .extraLarge: multiplier = 1.08
+        case .extraExtraLarge: multiplier = 1.16
+        case .extraExtraExtraLarge: multiplier = 1.24
+        case .accessibilityMedium: multiplier = 1.4
+        case .accessibilityLarge: multiplier = 1.6
+        case .accessibilityExtraLarge: multiplier = 1.85
+        case .accessibilityExtraExtraLarge: multiplier = 2.1
+        case .accessibilityExtraExtraExtraLarge: multiplier = 2.4
+        @unknown default: multiplier = 1.0
+        }
+        return bodySize * multiplier
+    }
 
     var colorScheme: ColorScheme? {
         guard let dark = darkOverride else { return nil }

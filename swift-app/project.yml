@@ -6,7 +6,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: 13
+    CURRENT_PROJECT_VERSION: 14
     DEVELOPMENT_TEAM: NPVX6Z996W
     SWIFT_VERSION: "5.9"
 targets:
@@ -69,6 +69,7 @@ targets:
     platform: iOS
     sources:
       - path: Confession1689Widgets/TodayWidget.swift
+      - path: Confession1689Widgets/WidgetIntents.swift
       - path: Confession1689Widgets/confession.json
         buildPhase: resources
     settings:
@@ -78,6 +79,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: false
         INFOPLIST_FILE: Confession1689Widgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Confession1689Widgets/Confession1689Widgets.entitlements
         SKIP_INSTALL: true
         ENABLE_USER_SCRIPT_SANDBOXING: true
       configs:

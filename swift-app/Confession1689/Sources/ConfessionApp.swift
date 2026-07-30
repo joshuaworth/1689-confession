@@ -25,7 +25,10 @@ struct ConfessionApp: App {
                     if !id.isEmpty, id != "p" { store.destination = id }
                 }
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .active { store.syncWithCloud() }
+                    guard phase == .active else { return }
+                    store.adoptPendingBookmarks()
+                    store.syncWithCloud()
+                    store.publishToWidget()
                 }
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
@@ -37,6 +40,7 @@ struct ConfessionApp: App {
                         QuickActionRelay.pending = nil
                         store.destination = pending
                     }
+                    ReaderTips.configure()
                     SyncStore.shared.start { StudyStore.shared.syncWithCloud() }
                     store.syncWithCloud()
                     SpotlightIndexer.indexIfNeeded()

@@ -181,6 +181,17 @@ struct RootView: View {
             NotesView(scrollTo: scrollTo)
                 .environmentObject(store)
         }
+        // Handoff: the reader's place travels to their other devices.
+        .userActivity("dev.intentmesh.confession.reading", isActive: scrollID != nil) { activity in
+            guard let id = scrollID else { return }
+            activity.title = library.label(for: id)
+            activity.webpageURL = URL(string: "https://1689.intentmesh.dev/p/\(id)")
+            activity.isEligibleForHandoff = true
+            activity.userInfo = ["paragraph": id]
+        }
+        .onContinueUserActivity("dev.intentmesh.confession.reading") { activity in
+            if let id = activity.userInfo?["paragraph"] as? String { store.destination = id }
+        }
         .onChange(of: scrollID) { _, id in
             guard let id, let chapter = chapterAnchor(for: id) else { return }
             if lastChapterCrossed != nil && lastChapterCrossed != chapter {
@@ -271,7 +282,12 @@ struct RootView: View {
     private func scrollTo(_ id: String) {
         showContents = false
         showSearch = false
-        if id == library.todayParagraphID() { store.recordTodayRead() }
+        if id == library.todayParagraphID() {
+            store.recordTodayRead()
+            ReviewPrompt.considerAsking(streak: store.streak,
+                                        bookmarks: store.bookmarks.count,
+                                        notes: store.notes.count)
+        }
 
         // Offer the way back when a jump leaves a genuinely different place.
         let origin = scrollID

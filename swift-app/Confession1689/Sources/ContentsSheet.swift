@@ -94,6 +94,20 @@ struct ContentsSheet: View {
                 Spacer()
             }
 
+            HStack(spacing: 10) {
+                if let pdf = pdfURL {
+                    ShareLink(item: pdf) {
+                        Text("Export PDF")
+                            .font(Fonts.sans(13, weight: 500))
+                            .padding(.horizontal, 13).padding(.vertical, 8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.rule(scheme), lineWidth: 1))
+                            .foregroundColor(Theme.inkSoft(scheme))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+
             if !store.notes.isEmpty {
                 HStack(spacing: 10) {
                     Button {
@@ -137,6 +151,10 @@ struct ContentsSheet: View {
                 Task { await ReminderCenter.reschedule(hour: store.reminderHour, minute: store.reminderMinute) }
             })
     }
+
+    /// Rendered once per sheet appearance; the whole confession is a few hundred
+    /// milliseconds, which is well inside the time it takes to reach for it.
+    private var pdfURL: URL? { PDFExport.whole() }
 
     private func notesMarkdown() -> String {
         var out = "# 1689 Notes\n"

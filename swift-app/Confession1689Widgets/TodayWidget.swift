@@ -4,26 +4,31 @@ import UIKit
 
 // MARK: - Minimal data (widget bundles its own copy of the confession)
 
-private struct WConfession: Decodable {
+struct WConfession: Decodable {
     let chapters: [WChapter]
 }
-private struct WChapter: Decodable {
+struct WChapter: Decodable {
     let number: Int
     let title: String
     let paragraphs: [WParagraph]
 }
-private struct WParagraph: Decodable {
+struct WParagraph: Decodable {
     let number: Int
     let text: String
 }
 
-private enum WLibrary {
+enum WLibrary {
     static let chapters: [WChapter] = {
         guard let url = Bundle.main.url(forResource: "confession", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let confession = try? JSONDecoder().decode(WConfession.self, from: data) else { return [] }
         return confession.chapters
     }()
+
+    static func todayID(for date: Date) -> String {
+        guard let found = today(for: date) else { return "top" }
+        return "c\(found.chapter.number)p\(found.paragraph.number)"
+    }
 
     static func today(for date: Date) -> (chapter: WChapter, paragraph: WParagraph)? {
         let order = chapters.flatMap { ch in ch.paragraphs.map { (ch, $0) } }
@@ -132,7 +137,27 @@ struct TodayWidgetView: View {
 
 @main
 struct TodayWidgetBundle: WidgetBundle {
-    var body: some Widget { TodayWidget() }
+    var body: some Widget {
+        TodayWidget()
+        if #available(iOS 18.0, *) {
+            TodayControl()
+        }
+    }
+}
+
+/// A Control Center control, iOS 18 and later: today's reading, one press away
+/// from anywhere in the system.
+@available(iOS 18.0, *)
+struct TodayControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "TodayReadingControl") {
+            ControlWidgetButton(action: OpenTodayIntent()) {
+                Label("Today's Reading", systemImage: "book")
+            }
+        }
+        .displayName("Today's Reading")
+        .description("Open today's paragraph of the 1689 confession.")
+    }
 }
 
 struct TodayWidget: Widget {
