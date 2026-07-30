@@ -5,6 +5,8 @@ import SwiftUI
 enum ReaderRow: Identifiable {
     case hero
     case sectionHeader(kicker: String, title: String, anchor: String)
+    /// Apparatus headers rest closed; `count` is shown as a meta line.
+    case apparatusHeader(kicker: String, title: String, anchor: String, count: Int)
     case paragraph(id: String, label: String, number: Int, text: String, proofRefs: [String])
     case signatories
     case colophon
@@ -13,10 +15,20 @@ enum ReaderRow: Identifiable {
         switch self {
         case .hero: return "top"
         case .sectionHeader(_, _, let anchor): return anchor
+        case .apparatusHeader(_, _, let anchor, _): return anchor
         case .paragraph(let id, _, _, _, _): return id
         case .signatories: return "signatories"
         case .colophon: return "colophon"
         }
+    }
+
+    /// The apparatus section a row belongs to, for collapse filtering.
+    var apparatusOwner: String? {
+        if case .paragraph(let id, _, _, _, _) = self {
+            if id.hasPrefix("preface-") { return "preface" }
+            if id.hasPrefix("appendix-") { return "appendix" }
+        }
+        return nil
     }
 }
 
@@ -24,10 +36,14 @@ struct RootView: View {
     @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showContents = false
     @State private var showSearch = false
     @State private var flashedID: String?
     @State private var scrollID: String?
+    @State private var openApparatus: Set<String> = []
+    /// Offered at the top on a cold launch instead of jumping there unasked.
+    @State private var resumeTarget: String?
 
     private let library = Library.shared
 
@@ -36,7 +52,8 @@ struct RootView: View {
         // Site document order: preface, the 32 chapters, appendix, signatories.
         var rows: [ReaderRow] = [.hero]
         func apparatus(_ prefix: String, _ kicker: String, _ section: Apparatus.Section) {
-            rows.append(.sectionHeader(kicker: kicker, title: section.title, anchor: prefix))
+            rows.append(.apparatusHeader(kicker: kicker, title: section.title,
+                                         anchor: prefix, count: section.paragraphs.count))
             for (index, text) in section.paragraphs.enumerated() {
                 rows.append(.paragraph(id: "\(prefix)-p\(index + 1)",
                                        label: "\(section.title) · ¶ \(index + 1)",
@@ -68,7 +85,7 @@ struct RootView: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Self.rows) { row in
+                    ForEach(visibleRows) { row in
                         rowView(row)
                             .padding(.horizontal, 20)
                             .frame(maxWidth: 700, alignment: .leading)
@@ -101,15 +118,11 @@ struct RootView: View {
             default: break
             }
             #endif
-            guard let position = store.position, position != "top" else {
-                store.restoring = false
-                return
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                scrollID = position
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                store.restoring = false
+            // A cold launch opens at the top; the last place is offered, never forced.
+            store.restoring = false
+            if let position = store.position, position != "top",
+               library.paragraph(for: position) != nil || position.hasPrefix("ch") {
+                resumeTarget = position
             }
         }
         .fullScreenCover(isPresented: $showContents) {
@@ -122,13 +135,29 @@ struct RootView: View {
         }
     }
 
+    /// Apparatus paragraphs are hidden until their header is opened.
+    private var visibleRows: [ReaderRow] {
+        Self.rows.filter { row in
+            guard let owner = row.apparatusOwner else { return true }
+            return openApparatus.contains(owner)
+        }
+    }
+
     @ViewBuilder
     private func rowView(_ row: ReaderRow) -> some View {
         switch row {
         case .hero:
-            HeroView(scrollTo: scrollTo)
+            HeroView(scrollTo: scrollTo, resumeTarget: $resumeTarget)
         case .sectionHeader(let kicker, let title, _):
             SectionHeaderView(kicker: kicker, title: title)
+        case .apparatusHeader(let kicker, let title, let anchor, let count):
+            ApparatusHeaderView(kicker: kicker, title: title, count: count,
+                                isOpen: openApparatus.contains(anchor)) {
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.26)) {
+                    if openApparatus.contains(anchor) { openApparatus.remove(anchor) }
+                    else { openApparatus.insert(anchor) }
+                }
+            }
         case .paragraph(let id, let label, let number, let text, let proofRefs):
             ParagraphView(paragraphID: id, label: label, number: number,
                           text: text, proofRefs: proofRefs, flashedID: $flashedID)
@@ -156,6 +185,54 @@ struct RootView: View {
                 if flashedID == id { flashedID = nil }
             }
         }
+    }
+}
+
+// MARK: - Apparatus header (rests closed, unfolds on tap)
+
+struct ApparatusHeaderView: View {
+    @Environment(\.colorScheme) private var scheme
+    let kicker: String
+    let title: String
+    let count: Int
+    let isOpen: Bool
+    let toggle: () -> Void
+
+    var body: some View {
+        Button(action: toggle) {
+            VStack(alignment: .leading, spacing: 0) {
+                Rectangle().fill(Theme.rule(scheme)).frame(height: 1)
+                    .padding(.top, 44).padding(.bottom, 36)
+
+                Text(kicker)
+                    .font(Fonts.sans(12, weight: 600))
+                    .kerning(1.6)
+                    .textCase(.uppercase)
+                    .foregroundColor(Theme.red)
+                    .padding(.bottom, 8)
+
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    Text(title)
+                        .font(Fonts.serif(32, weight: 500))
+                        .foregroundColor(Theme.red)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                    Text(isOpen ? "▲" : "▼")
+                        .font(Fonts.sans(12))
+                        .foregroundColor(Theme.inkSoft(scheme))
+                }
+
+                Text(isOpen ? "Tap to close" : "\(count) paragraphs · tap to read")
+                    .font(Fonts.sans(12.5))
+                    .foregroundColor(Theme.inkSoft(scheme))
+                    .padding(.top, 8)
+                    .padding(.bottom, isOpen ? 24 : 4)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(count) paragraphs")
+        .accessibilityHint(isOpen ? "Closes this section" : "Opens this section")
     }
 }
 
@@ -242,6 +319,7 @@ struct HeroView: View {
     @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
     let scrollTo: (String) -> Void
+    @Binding var resumeTarget: String?
     private let library = Library.shared
 
     var body: some View {
@@ -271,7 +349,28 @@ struct HeroView: View {
                 .padding(.bottom, 22)
 
             todayRow
+                .padding(.bottom, resumeTarget == nil ? 40 : 18)
+
+            if let target = resumeTarget {
+                Button {
+                    resumeTarget = nil
+                    scrollTo(target)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("Continue reading")
+                            .font(Fonts.sans(13, weight: 600))
+                        Text(library.label(for: target))
+                            .font(Fonts.sans(13))
+                        Text("→")
+                            .font(Fonts.sans(13, weight: 600))
+                    }
+                    .foregroundColor(Theme.red)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.red, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
                 .padding(.bottom, 40)
+            }
         }
     }
 
