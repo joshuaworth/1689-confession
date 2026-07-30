@@ -133,9 +133,13 @@ on-device LLM, no Android equivalent we committed to) and the Watch app.
   20-min exp, aud `appstoreconnect-v1`). **Prefer the API over the web UI** — the
   web UI silently failed a Delete All and left 10 interleaved screenshots.
 - App Store app id `6796099200`, version id `cf8b328e-a017-41b9-81dd-7783e5db3fd3`.
-- **Android signing** — `app/android/release.keystore` + `keystore.properties`,
-  both gitignored. **They are not backed up anywhere. Losing them means losing
-  the Play listing.** Tell Joshua to back them up.
+- **Android signing** — `app/android/release.keystore` + `keystore.properties`.
+  Gitignored **on purpose**: this repo is public, and that key is what proves an
+  Android update genuinely comes from Joshua. Backed up to **iCloud Drive →
+  1689 → android-signing** (verified openable, contains `confession1689,
+  PrivateKeyEntry`). Losing every copy means the Play listing can never be
+  updated again by anyone. If it ever needs to be in git, use one of his
+  **private** repos — never this one.
 - **Play Console** — developer account "Intent Mesh" `5216005430039487024`,
   app `4975640427136287638`, package `com.intentmesh.confession1689`, free.
   Store listing saved (icon, feature graphic, 4 screenshots, full description).
