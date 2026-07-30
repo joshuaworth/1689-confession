@@ -37,6 +37,7 @@ struct RootView: View {
     @Environment(\.colorScheme) private var scheme
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSize
     @State private var showContents = false
     @State private var showSearch = false
     @State private var flashedID: String?
@@ -85,6 +86,21 @@ struct RootView: View {
     }()
 
     var body: some View {
+        if horizontalSize == .regular {
+            // iPad and Mac: the contents live beside the text rather than over it.
+            NavigationSplitView {
+                SidebarView(scrollTo: scrollTo, openNotes: { showNotes = true })
+                    .environmentObject(store)
+            } detail: {
+                reader
+            }
+            .navigationSplitViewStyle(.balanced)
+        } else {
+            reader
+        }
+    }
+
+    private var reader: some View {
         ZStack(alignment: .top) {
             Theme.paper(scheme).ignoresSafeArea()
 
@@ -92,8 +108,10 @@ struct RootView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(visibleRows) { row in
                         rowView(row)
-                            .padding(.horizontal, 20)
-                            .frame(maxWidth: 700, alignment: .leading)
+                            .padding(.horizontal, horizontalSize == .regular ? 32 : 20)
+                            // Hold the line length near 70 characters. A wide
+                            // screen buys margin, never a longer measure.
+                            .frame(maxWidth: measure, alignment: .leading)
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
@@ -104,7 +122,8 @@ struct RootView: View {
             .scrollIndicators(.hidden)
 
             TopBar(showSearch: $showSearch, showContents: $showContents,
-                   context: currentContext, scrollTo: scrollTo)
+                   context: currentContext, showsContentsButton: horizontalSize != .regular,
+                   scrollTo: scrollTo)
 
             if let target = returnTarget {
                 returnPill(target)
@@ -169,6 +188,11 @@ struct RootView: View {
             }
             lastChapterCrossed = chapter
         }
+    }
+
+    /// Line length scales with the reader's chosen text size, not the screen.
+    private var measure: CGFloat {
+        horizontalSize == .regular ? store.bodySize * 34 : 700
     }
 
     /// The chapter or apparatus section a row id belongs to.
@@ -360,6 +384,7 @@ private struct TopBar: View {
     @Binding var showSearch: Bool
     @Binding var showContents: Bool
     let context: String?
+    var showsContentsButton: Bool = true
     let scrollTo: (String) -> Void
 
     var body: some View {
@@ -389,7 +414,9 @@ private struct TopBar: View {
                       label: scheme == .dark ? "Switch to light mode" : "Switch to candlelight") {
                 store.darkOverride = !(scheme == .dark)
             }
-            barButton("line.3.horizontal", label: "Contents and settings") { showContents = true }
+            if showsContentsButton {
+                barButton("line.3.horizontal", label: "Contents and settings") { showContents = true }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

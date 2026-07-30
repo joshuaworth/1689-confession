@@ -49,6 +49,7 @@ struct ConfessionApp: App {
                     #endif
                 }
         }
+        .commands { ReaderCommands(store: store) }
     }
 }
 
