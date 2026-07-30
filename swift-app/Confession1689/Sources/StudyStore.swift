@@ -98,8 +98,22 @@ final class StudyStore: ObservableObject {
     }
 
     func toggleBookmark(_ id: String) {
-        if let index = bookmarks.firstIndex(of: id) { bookmarks.remove(at: index) }
-        else { bookmarks.append(id) }
+        let adding: Bool
+        if let index = bookmarks.firstIndex(of: id) { bookmarks.remove(at: index); adding = false }
+        else { bookmarks.append(id); adding = true }
+        SyncStore.shared.recordBookmark(id, added: adding)
+    }
+
+    func setNote(_ text: String?, for id: String) {
+        if let text, !text.isEmpty { notes[id] = text } else { notes.removeValue(forKey: id) }
+        SyncStore.shared.recordNote(id, text: text?.isEmpty == true ? nil : text)
+    }
+
+    /// Folds iCloud state in and pushes local-only records back up.
+    func syncWithCloud() {
+        let merged = SyncStore.shared.merge(localBookmarks: bookmarks, localNotes: notes)
+        if merged.bookmarks != bookmarks.sorted() { bookmarks = merged.bookmarks }
+        if merged.notes != notes { notes = merged.notes }
     }
 
     func isBookmarked(_ id: String) -> Bool { bookmarks.contains(id) }

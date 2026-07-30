@@ -6,6 +6,7 @@ import UserNotifications
 @main
 struct ConfessionApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = StudyStore.shared
 
     var body: some Scene {
@@ -17,6 +18,15 @@ struct ConfessionApp: App {
                     // confession1689://today, confession1689://c11p1, …
                     store.destination = url.host ?? url.lastPathComponent
                 }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    // https://1689.intentmesh.dev/p/c11p1
+                    guard let url = activity.webpageURL else { return }
+                    let id = url.lastPathComponent
+                    if !id.isEmpty, id != "p" { store.destination = id }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { store.syncWithCloud() }
+                }
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
                         store.destination = id
@@ -27,6 +37,8 @@ struct ConfessionApp: App {
                         QuickActionRelay.pending = nil
                         store.destination = pending
                     }
+                    SyncStore.shared.start { StudyStore.shared.syncWithCloud() }
+                    store.syncWithCloud()
                     SpotlightIndexer.indexIfNeeded()
                     if store.reminderEnabled {
                         await ReminderCenter.reschedule(hour: store.reminderHour,

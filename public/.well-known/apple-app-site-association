@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "NPVX6Z996W.com.intentmesh.confession1689"
+        ],
+        "components": [
+          {
+            "/": "/p/*",
+            "comment": "paragraph permalinks"
+          }
+        ]
+      }
+    ]
+  }
+}

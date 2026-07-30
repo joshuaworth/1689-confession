@@ -29,8 +29,7 @@ struct NoteEditorSheet: View {
             HStack(spacing: 22) {
                 Button("Save") {
                     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmed.isEmpty { store.notes.removeValue(forKey: paragraphID) }
-                    else { store.notes[paragraphID] = trimmed }
+                    store.setNote(trimmed.isEmpty ? nil : trimmed, for: paragraphID)
                     dismiss()
                 }
                 .font(Fonts.sans(14, weight: 600))
@@ -42,7 +41,7 @@ struct NoteEditorSheet: View {
 
                 if store.notes[paragraphID] != nil {
                     Button("Delete") {
-                        store.notes.removeValue(forKey: paragraphID)
+                        store.setNote(nil, for: paragraphID)
                         dismiss()
                     }
                     .font(Fonts.sans(14))

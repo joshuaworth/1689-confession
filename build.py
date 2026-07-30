@@ -139,6 +139,18 @@ def build():
     (OUT / "privacy.html").write_text(PRIVACY_HTML)
 
     # Crawler / AI-tool surface
+    # Universal links: the app claims only /p/<id>, never the site root.
+    wellknown = OUT / ".well-known"
+    wellknown.mkdir(exist_ok=True)
+    (wellknown / "apple-app-site-association").write_text(json.dumps({
+        "applinks": {
+            "details": [{
+                "appIDs": ["NPVX6Z996W.com.intentmesh.confession1689"],
+                "components": [{"/": "/p/*", "comment": "paragraph permalinks"}],
+            }]
+        }
+    }, indent=2))
+
     (OUT / "robots.txt").write_text(
         "User-agent: *\nAllow: /\nSitemap: https://1689.intentmesh.dev/sitemap.xml\n")
     (OUT / "sitemap.xml").write_text(
@@ -1169,7 +1181,7 @@ body.has-bm #bmHead { display: block; }
         else if (act === 'note') { openNoteEditor(p); }
         else {
           try {
-            navigator.clipboard.writeText(location.origin + location.pathname + '#' + p.id);
+            navigator.clipboard.writeText(location.origin + '/p/' + p.id);
             toastMsg('Link copied');
           } catch (e) {}
         }
@@ -1214,7 +1226,18 @@ body.has-bm #bmHead { display: block; }
       if (p && p.id) { try { localStorage.setItem('pos', p.id); } catch (e) {} }
     }, 400);
   }, { passive: true });
-  if (!location.hash) {
+  // Arrived via a /p/<id> permalink: land on that paragraph.
+  if (window.__permalink) {
+    var linked = document.getElementById(window.__permalink);
+    if (linked) {
+      requestAnimationFrame(function () {
+        linked.scrollIntoView({ block: 'center' });
+        flash(linked);
+      });
+    }
+  }
+
+  if (!location.hash && !window.__permalink) {
     try {
       var savedPos = localStorage.getItem('pos');
       var posEl = savedPos && document.getElementById(savedPos);

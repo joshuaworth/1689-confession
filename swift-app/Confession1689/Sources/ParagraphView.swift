@@ -109,11 +109,11 @@ struct ParagraphView: View {
                           systemImage: "square.and.pencil")
                 }
                 Button {
-                    UIPasteboard.general.string = "https://1689.intentmesh.dev/#\(paragraphID)"
+                    UIPasteboard.general.string = "https://1689.intentmesh.dev/p/\(paragraphID)"
                 } label: {
                     Label("Copy Link", systemImage: "link")
                 }
-                ShareLink(item: "\(label) — \(text)\n\nhttps://1689.intentmesh.dev/#\(paragraphID)") {
+                ShareLink(item: "\(label) — \(text)\n\nhttps://1689.intentmesh.dev/p/\(paragraphID)") {
                     Label("Share Text", systemImage: "square.and.arrow.up")
                 }
                 Button {
