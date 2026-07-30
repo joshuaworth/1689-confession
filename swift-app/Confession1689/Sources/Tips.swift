@@ -24,5 +24,11 @@ enum ReaderTips {
             .displayFrequency(.immediate),
             .datastoreLocation(.applicationDefault),
         ])
+        #if DEBUG
+        // Store screenshots show the app, not its coaching.
+        if UserDefaults.standard.bool(forKey: "seedNoTips") {
+            Tips.hideAllTipsForTesting()
+        }
+        #endif
     }
 }

@@ -9,7 +9,7 @@ mkdir -p "$OUT"
 
 cd "$DIR"
 xcodebuild -project Confession1689.xcodeproj -scheme Confession1689 \
-  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -destination 'generic/platform=iOS Simulator' \
   build CODE_SIGNING_ALLOWED=NO -quiet >/dev/null
 APP=$(ls -d ~/Library/Developer/Xcode/DerivedData/Confession1689-*/Build/Products/Debug-iphonesimulator/Confession1689.app | head -1)
 
@@ -19,6 +19,7 @@ xcrun simctl status_bar "$DEV" override --time "9:41" --batteryLevel 100 --batte
 
 seed_common() {
   xcrun simctl spawn "$DEV" defaults write "$BUNDLE" theme -bool false
+  xcrun simctl spawn "$DEV" defaults write "$BUNDLE" seedNoTips -bool true
   xcrun simctl spawn "$DEV" defaults write "$BUNDLE" bm -array c1p1 c11p1 c17p1
   xcrun simctl spawn "$DEV" defaults write "$BUNDLE" nt -dict c11p1 "Justification is by faith alone, but not by a faith that is alone. See paragraph 2."
 }
@@ -43,6 +44,7 @@ fresh() {
 # 1. Hero (light)
 fresh
 xcrun simctl spawn "$DEV" defaults write "$BUNDLE" theme -bool false
+  xcrun simctl spawn "$DEV" defaults write "$BUNDLE" seedNoTips -bool true
 capture 01-hero
 
 # 2. Proof open at Chapter I ¶ 1 (light)
