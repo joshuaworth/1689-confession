@@ -33,9 +33,9 @@ struct RootView: View {
 
     private static let rows: [ReaderRow] = {
         let library = Library.shared
+        // Site document order: preface, the 32 chapters, appendix, signatories.
         var rows: [ReaderRow] = [.hero]
-        for (prefix, kicker, section) in [("preface", "Preface · 1677", library.apparatus.preface),
-                                          ("appendix", "Appendix", library.apparatus.appendix)] {
+        func apparatus(_ prefix: String, _ kicker: String, _ section: Apparatus.Section) {
             rows.append(.sectionHeader(kicker: kicker, title: section.title, anchor: prefix))
             for (index, text) in section.paragraphs.enumerated() {
                 rows.append(.paragraph(id: "\(prefix)-p\(index + 1)",
@@ -43,6 +43,7 @@ struct RootView: View {
                                        number: index + 1, text: text, proofRefs: []))
             }
         }
+        apparatus("preface", "Preface · 1677", library.apparatus.preface)
         for chapter in library.confession.chapters {
             rows.append(.sectionHeader(kicker: "Chapter \(chapter.roman)",
                                        title: chapter.title,
@@ -55,6 +56,7 @@ struct RootView: View {
                                        proofRefs: paragraph.proofRefs))
             }
         }
+        apparatus("appendix", "Appendix · 1677", library.apparatus.appendix)
         rows.append(.signatories)
         rows.append(.colophon)
         return rows
