@@ -107,7 +107,14 @@ final class Library {
         }
         confession = load("confession", as: Confession.self)
         apparatus = load("apparatus", as: Apparatus.self)
-        verses = load("verses", as: [String: [Verse]].self)
+        // The watch bundle omits the verse corpus; everything else is shared.
+        if let url = Bundle.main.url(forResource: "verses", withExtension: "json"),
+           let data = try? Data(contentsOf: url),
+           let decoded = try? JSONDecoder().decode([String: [Verse]].self, from: data) {
+            verses = decoded
+        } else {
+            verses = [:]
+        }
         paragraphOrder = confession.chapters.flatMap { ch in
             ch.paragraphs.map { "c\(ch.number)p\($0.number)" }
         }

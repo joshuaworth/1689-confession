@@ -11,6 +11,7 @@
   <dict>
     <key>com.intentmesh.confession1689</key><string>1689 Confession App Store</string>
     <key>com.intentmesh.confession1689.widgets</key><string>1689 Widgets App Store</string>
+    <key>com.intentmesh.confession1689.watchkitapp</key><string>1689 Watch App Store</string>
   </dict>
   <key>uploadSymbols</key><true/>
 </dict>
