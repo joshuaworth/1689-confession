@@ -19,6 +19,7 @@ struct ParagraphView: View {
     @State private var editingNote = false
     @State private var shareCard: ShareCardItem?
     @State private var chapterReference: ProofReference?
+    @State private var companionAction: CompanionAction?
 
     private let library = Library.shared
 
@@ -63,6 +64,16 @@ struct ParagraphView: View {
         .sheet(item: $shareCard) { item in
             ShareCardSheet(item: item)
         }
+        #if canImport(FoundationModels)
+        .sheet(item: $companionAction) { action in
+            if #available(iOS 26.0, *) {
+                CompanionSheet(paragraphID: paragraphID, label: label, paragraph: text,
+                               proofRefs: proofRefs, initialAction: action,
+                               jumpToChapter: { store.destination = "ch\($0)" })
+                    .environmentObject(store)
+            }
+        }
+        #endif
         .fullScreenCover(item: $chapterReference) { reference in
             BibleChapterSheet(reference: reference,
                               citedIn: paragraphID,
@@ -92,6 +103,15 @@ struct ParagraphView: View {
                    seed.hasPrefix(paragraphID + "|") {
                     chapterReference = ProofReference(String(seed.dropFirst(paragraphID.count + 1)))
                 }
+                #if canImport(FoundationModels)
+                if let seed = UserDefaults.standard.string(forKey: "seedCompanion"),
+                   seed.hasPrefix(paragraphID + "|") {
+                    let kind = String(seed.dropFirst(paragraphID.count + 1))
+                    companionAction = kind == "related" ? .relatedChapters
+                        : kind.hasPrefix("q:") ? .question(String(kind.dropFirst(2)))
+                        : .plainEnglish
+                }
+                #endif
                 #endif
             }
             .contextMenu {
@@ -121,6 +141,21 @@ struct ParagraphView: View {
                 } label: {
                     Label("Share as Card", systemImage: "photo")
                 }
+                #if canImport(FoundationModels)
+                if #available(iOS 26.0, *), StudyCompanion.isSupported {
+                    Divider()
+                    Button {
+                        companionAction = .plainEnglish
+                    } label: {
+                        Label("In Plain English", systemImage: "text.book.closed")
+                    }
+                    Button {
+                        companionAction = .question("")
+                    } label: {
+                        Label("Ask About This", systemImage: "questionmark.bubble")
+                    }
+                }
+                #endif
             }
     }
 

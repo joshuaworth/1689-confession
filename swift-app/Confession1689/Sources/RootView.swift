@@ -125,6 +125,14 @@ struct RootView: View {
         }
         .onAppear {
             #if DEBUG
+            // Test seeds that target a paragraph need that paragraph on screen.
+            for key in ["seedCompanion", "seedProof", "seedChapter"] {
+                if let seed = UserDefaults.standard.string(forKey: key),
+                   let id = seed.split(separator: "|").first {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { scrollID = String(id) }
+                    break
+                }
+            }
             switch UserDefaults.standard.string(forKey: "seedOverlay") {
             case "contents": DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showContents = true }
             case "search": DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { showSearch = true }
