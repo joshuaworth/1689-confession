@@ -83,6 +83,16 @@ struct RootView: View {
 
             TopBar(showSearch: $showSearch, showContents: $showContents, scrollTo: scrollTo)
         }
+        .onChange(of: store.destination) { _, destination in
+            guard let destination else { return }
+            store.destination = nil
+            switch destination {
+            case "search": showSearch = true
+            case "bookmarks", "contents": showContents = true
+            case "today": scrollTo(library.todayParagraphID())
+            default: scrollTo(destination)
+            }
+        }
         .onAppear {
             #if DEBUG
             switch UserDefaults.standard.string(forKey: "seedOverlay") {
@@ -195,11 +205,12 @@ private struct TopBar: View {
 
             Spacer()
 
-            barButton("magnifyingglass") { showSearch = true }
-            barButton(scheme == .dark ? "sun.max" : "moon") {
+            barButton("magnifyingglass", label: "Search") { showSearch = true }
+            barButton(scheme == .dark ? "sun.max" : "moon",
+                      label: scheme == .dark ? "Switch to light mode" : "Switch to candlelight") {
                 store.darkOverride = !(scheme == .dark)
             }
-            barButton("line.3.horizontal") { showContents = true }
+            barButton("line.3.horizontal", label: "Contents and settings") { showContents = true }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -212,7 +223,7 @@ private struct TopBar: View {
         }
     }
 
-    private func barButton(_ system: String, action: @escaping () -> Void) -> some View {
+    private func barButton(_ system: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
                 .font(.system(size: 17, weight: .medium))
@@ -220,6 +231,7 @@ private struct TopBar: View {
                 .frame(width: 40, height: 40)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
 

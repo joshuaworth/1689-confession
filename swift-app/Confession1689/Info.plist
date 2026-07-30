@@ -13,6 +13,34 @@
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
   <key>LSRequiresIPhoneOS</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>com.intentmesh.confession1689</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>confession1689</string>
+      </array>
+    </dict>
+  </array>
+  <key>UIApplicationShortcutItems</key>
+  <array>
+    <dict>
+      <key>UIApplicationShortcutItemType</key><string>today</string>
+      <key>UIApplicationShortcutItemTitle</key><string>Today's Reading</string>
+      <key>UIApplicationShortcutItemIconSymbolName</key><string>book</string>
+    </dict>
+    <dict>
+      <key>UIApplicationShortcutItemType</key><string>search</string>
+      <key>UIApplicationShortcutItemTitle</key><string>Search</string>
+      <key>UIApplicationShortcutItemIconSymbolName</key><string>magnifyingglass</string>
+    </dict>
+    <dict>
+      <key>UIApplicationShortcutItemType</key><string>bookmarks</string>
+      <key>UIApplicationShortcutItemTitle</key><string>Bookmarks</string>
+      <key>UIApplicationShortcutItemIconSymbolName</key><string>bookmark</string>
+    </dict>
+  </array>
   <key>UILaunchScreen</key>
   <dict>
     <key>UIColorName</key><string>LaunchBackground</string>

@@ -84,27 +84,47 @@ struct TodayWidgetView: View {
     let entry: TodayEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Today's Reading")
-                .font(.system(size: 10, weight: .semibold))
-                .kerning(1.1)
-                .textCase(.uppercase)
-                .foregroundStyle(.secondary)
-            Text(entry.kicker)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(wRed)
-            Text(entry.title)
-                .font(.system(size: family == .systemSmall ? 12 : 14, weight: .medium, design: .serif))
-                .lineLimit(2)
-            if family != .systemSmall {
-                Text(entry.text)
-                    .font(.system(size: 13, design: .serif))
-                    .lineLimit(4)
-                    .foregroundStyle(.primary.opacity(0.85))
+        Group {
+            switch family {
+            case .accessoryInline:
+                Text("1689 · \(entry.kicker)")
+            case .accessoryRectangular:
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("1689 · Today")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text(entry.kicker)
+                        .font(.system(size: 13, weight: .bold))
+                    Text(entry.title)
+                        .font(.system(size: 12, design: .serif))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            default:
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Today's Reading")
+                        .font(.system(size: 10, weight: .semibold))
+                        .kerning(1.1)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.secondary)
+                    Text(entry.kicker)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(wRed)
+                    Text(entry.title)
+                        .font(.system(size: family == .systemSmall ? 12 : 14, weight: .medium, design: .serif))
+                        .lineLimit(2)
+                    if family != .systemSmall {
+                        Text(entry.text)
+                            .font(.system(size: 13, design: .serif))
+                            .lineLimit(4)
+                            .foregroundStyle(.primary.opacity(0.85))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(URL(string: "confession1689://today"))
         .containerBackground(for: .widget) { Color(UIColor.systemBackground) }
     }
 }
@@ -121,6 +141,6 @@ struct TodayWidget: Widget {
         }
         .configurationDisplayName("Today's Reading")
         .description("One paragraph a day through the whole confession.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryInline, .accessoryRectangular])
     }
 }

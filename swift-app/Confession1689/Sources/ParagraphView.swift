@@ -48,6 +48,7 @@ struct ParagraphView: View {
             let ref = url.absoluteString
                 .replacingOccurrences(of: "proof://", with: "")
                 .removingPercentEncoding ?? ""
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeOut(duration: 0.26)) {
                 expandedRef = (expandedRef == ref) ? nil : ref
             }
@@ -181,6 +182,7 @@ struct VerseScholium: View {
 
             ForEach(verses, id: \.r) { verse in
                 verseRow(verse)
+                    .textSelection(.enabled)
             }
 
             Text("Berean Standard Bible and World English Bible are public domain; KJV is Crown copyright expired.")

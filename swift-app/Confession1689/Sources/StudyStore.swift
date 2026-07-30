@@ -22,6 +22,10 @@ final class StudyStore: ObservableObject {
     /// True while the launch scroll-restore is in flight; paragraph onAppear must not record.
     var restoring = true
 
+    /// Cross-entry navigation requests: "today", "search", "bookmarks", or a paragraph id.
+    /// Set by widget taps, Spotlight results, and home-screen quick actions.
+    @Published var destination: String?
+
     func recordPosition(_ id: String) {
         guard !restoring else { return }
         position = id
