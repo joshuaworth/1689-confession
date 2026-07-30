@@ -80,3 +80,13 @@ full-text search, bookmarks, per-paragraph study notes, today's reading, reading
 position resume, five reading sizes, native splash and icons. This is a study app,
 not a website wrapper. Planned for v1.1: a bundled narrated audiobook of the whole
 confession (open-source neural voice, pending Joshua's approval of the sample).
+
+## Google Play — created 2026-07-30
+
+- Developer account: Intent Mesh (5216005430039487024)
+- App: "1689 Baptist Confession", package `com.intentmesh.confession1689`, free, App
+- Internal testing release holds the signed AAB (Play App Signing enabled)
+- Declarations accepted: Developer Program Policies, US export laws
+- Remaining before public release: store listing copy and graphics, content
+  rating questionnaire, data safety form (answer: no data collected), target
+  audience, then promote the internal release to production.
