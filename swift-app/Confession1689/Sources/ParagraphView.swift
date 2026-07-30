@@ -50,7 +50,7 @@ struct ParagraphView: View {
             let ref = url.absoluteString
                 .replacingOccurrences(of: "proof://", with: "")
                 .removingPercentEncoding ?? ""
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Haptics.proof()
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.26)) {
                 expandedRef = (expandedRef == ref) ? nil : ref
             }
@@ -64,7 +64,9 @@ struct ParagraphView: View {
             ShareCardSheet(item: item)
         }
         .fullScreenCover(item: $chapterReference) { reference in
-            BibleChapterSheet(reference: reference)
+            BibleChapterSheet(reference: reference,
+                              citedIn: paragraphID,
+                              jumpBack: { store.destination = $0 })
                 .environmentObject(store)
         }
     }
@@ -94,7 +96,7 @@ struct ParagraphView: View {
             }
             .contextMenu {
                 Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    Haptics.bookmark()
                     store.toggleBookmark(paragraphID)
                 } label: {
                     Label(store.isBookmarked(paragraphID) ? "Remove Bookmark" : "Bookmark",

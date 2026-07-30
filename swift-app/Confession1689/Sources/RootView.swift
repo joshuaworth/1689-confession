@@ -44,6 +44,11 @@ struct RootView: View {
     @State private var openApparatus: Set<String> = []
     /// Offered at the top on a cold launch instead of jumping there unasked.
     @State private var resumeTarget: String?
+    @State private var showNotes = false
+    @State private var showFirstRun = false
+    /// Where the reader was before a jump, so the thread is never lost.
+    @State private var returnTarget: String?
+    @State private var lastChapterCrossed: String?
 
     private let library = Library.shared
 
@@ -98,7 +103,15 @@ struct RootView: View {
             .scrollPosition(id: $scrollID, anchor: .top)
             .scrollIndicators(.hidden)
 
-            TopBar(showSearch: $showSearch, showContents: $showContents, scrollTo: scrollTo)
+            TopBar(showSearch: $showSearch, showContents: $showContents,
+                   context: currentContext, scrollTo: scrollTo)
+
+            if let target = returnTarget {
+                returnPill(target)
+            }
+        }
+        .fullScreenCover(isPresented: $showFirstRun) {
+            FirstRunView { showFirstRun = false }
         }
         .onChange(of: store.destination) { _, destination in
             guard let destination else { return }
@@ -120,18 +133,73 @@ struct RootView: View {
             #endif
             // A cold launch opens at the top; the last place is offered, never forced.
             store.restoring = false
+            if !store.hasLaunched {
+                store.hasLaunched = true
+                showFirstRun = true
+            }
             if let position = store.position, position != "top",
                library.paragraph(for: position) != nil || position.hasPrefix("ch") {
                 resumeTarget = position
             }
         }
         .fullScreenCover(isPresented: $showContents) {
-            ContentsSheet(scrollTo: scrollTo)
+            ContentsSheet(scrollTo: scrollTo, openNotes: { showNotes = true })
                 .environmentObject(store)
         }
         .fullScreenCover(isPresented: $showSearch) {
             SearchView(scrollTo: scrollTo)
                 .environmentObject(store)
+        }
+        .fullScreenCover(isPresented: $showNotes) {
+            NotesView(scrollTo: scrollTo)
+                .environmentObject(store)
+        }
+        .onChange(of: scrollID) { _, id in
+            guard let id, let chapter = chapterAnchor(for: id) else { return }
+            if lastChapterCrossed != nil && lastChapterCrossed != chapter {
+                Haptics.chapterBoundary()
+            }
+            lastChapterCrossed = chapter
+        }
+    }
+
+    /// The chapter or apparatus section a row id belongs to.
+    private func chapterAnchor(for id: String) -> String? {
+        if id.hasPrefix("preface") { return "preface" }
+        if id.hasPrefix("appendix") { return "appendix" }
+        if let match = id.wholeMatch(of: #/c(\d+)p\d+/#) { return "ch\(match.1)" }
+        if id.hasPrefix("ch") { return id }
+        return nil
+    }
+
+    /// "XIV · Of Saving Faith" for the top bar, derived from the visible row.
+    private var currentContext: String? {
+        guard let id = scrollID, let anchor = chapterAnchor(for: id),
+              anchor.hasPrefix("ch"), let number = Int(anchor.dropFirst(2)),
+              let chapter = library.confession.chapters.first(where: { $0.number == number })
+        else { return nil }
+        return "\(chapter.roman) · \(chapter.title)"
+    }
+
+    private func returnPill(_ target: String) -> some View {
+        VStack {
+            Spacer()
+            Button {
+                returnTarget = nil
+                scrollID = target
+                Haptics.arrive()
+            } label: {
+                Text("↩  Return to \(library.label(for: target))")
+                    .font(Fonts.sans(13, weight: 600))
+                    .foregroundColor(Theme.paper(scheme))
+                    .padding(.horizontal, 18).padding(.vertical, 11)
+                    .background(Theme.red)
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.22), radius: 12, y: 5)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 28)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
     }
 
@@ -172,8 +240,21 @@ struct RootView: View {
         showContents = false
         showSearch = false
         if id == library.todayParagraphID() { store.recordTodayRead() }
+
+        // Offer the way back when a jump leaves a genuinely different place.
+        let origin = scrollID
+        if let origin, origin != id, origin != "top",
+           chapterAnchor(for: origin) != chapterAnchor(for: id) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) { returnTarget = origin }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    if returnTarget == origin { returnTarget = nil }
+                }
+            }
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            withAnimation(.easeOut(duration: 0.3)) { scrollID = id }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { scrollID = id }
             flash(id)
         }
     }
@@ -270,18 +351,30 @@ private struct TopBar: View {
     @Environment(\.colorScheme) private var scheme
     @Binding var showSearch: Bool
     @Binding var showContents: Bool
+    let context: String?
     let scrollTo: (String) -> Void
 
     var body: some View {
         HStack(spacing: 4) {
             Button { scrollTo("top") } label: {
-                (Text("1689").foregroundColor(Theme.ink(scheme))
-                 + Text(".").foregroundColor(Theme.red))
-                    .font(Fonts.sans(21, weight: 700))
+                HStack(alignment: .firstTextBaseline, spacing: 9) {
+                    (Text("1689").foregroundColor(Theme.ink(scheme))
+                     + Text(".").foregroundColor(Theme.red))
+                        .font(Fonts.sans(21, weight: 700))
+                    if let context {
+                        Text(context)
+                            .font(Fonts.sans(12, weight: 500))
+                            .foregroundColor(Theme.inkSoft(scheme))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.2), value: context)
             }
             .buttonStyle(.plain)
 
-            Spacer()
+            Spacer(minLength: 6)
 
             barButton("magnifyingglass", label: "Search") { showSearch = true }
             barButton(scheme == .dark ? "sun.max" : "moon",

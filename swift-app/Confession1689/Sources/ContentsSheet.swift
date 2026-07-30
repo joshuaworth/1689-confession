@@ -5,6 +5,7 @@ struct ContentsSheet: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dismiss) private var dismiss
     let scrollTo: (String) -> Void
+    let openNotes: () -> Void
 
     private let library = Library.shared
 
@@ -94,15 +95,30 @@ struct ContentsSheet: View {
             }
 
             if !store.notes.isEmpty {
-                ShareLink(item: notesMarkdown(),
-                          preview: SharePreview("1689 Notes")) {
-                    Text("Export Notes")
-                        .font(Fonts.sans(13, weight: 500))
-                        .padding(.horizontal, 13).padding(.vertical, 8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.rule(scheme), lineWidth: 1))
-                        .foregroundColor(Theme.inkSoft(scheme))
+                HStack(spacing: 10) {
+                    Button {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { openNotes() }
+                    } label: {
+                        Text("My Notes (\(store.notes.count))")
+                            .font(Fonts.sans(13, weight: 600))
+                            .padding(.horizontal, 13).padding(.vertical, 8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.red, lineWidth: 1))
+                            .foregroundColor(Theme.red)
+                    }
+                    .buttonStyle(.plain)
+
+                    ShareLink(item: notesMarkdown(),
+                              preview: SharePreview("1689 Notes")) {
+                        Text("Export")
+                            .font(Fonts.sans(13, weight: 500))
+                            .padding(.horizontal, 13).padding(.vertical, 8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.rule(scheme), lineWidth: 1))
+                            .foregroundColor(Theme.inkSoft(scheme))
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
                 }
-                .buttonStyle(.plain)
             }
         }
     }

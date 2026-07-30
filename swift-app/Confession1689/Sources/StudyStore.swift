@@ -29,6 +29,17 @@ final class StudyStore: ObservableObject {
     /// A query queued by the Siri search intent, consumed when the search opens.
     var pendingSearchQuery: String?
 
+    @Published var recentSearches: [String] { didSet { defaults.set(recentSearches, forKey: "recents") } }
+    @Published var hasLaunched: Bool { didSet { defaults.set(hasLaunched, forKey: "launched") } }
+
+    func recordSearch(_ query: String) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > 2 else { return }
+        recentSearches.removeAll { $0.caseInsensitiveCompare(trimmed) == .orderedSame }
+        recentSearches.insert(trimmed, at: 0)
+        if recentSearches.count > 6 { recentSearches = Array(recentSearches.prefix(6)) }
+    }
+
     @Published var reminderEnabled: Bool { didSet { defaults.set(reminderEnabled, forKey: "remindOn") } }
     @Published var reminderHour: Int { didSet { defaults.set(reminderHour, forKey: "remindHour") } }
     @Published var reminderMinute: Int { didSet { defaults.set(reminderMinute, forKey: "remindMin") } }
@@ -82,6 +93,8 @@ final class StudyStore: ObservableObject {
         reminderHour = defaults.object(forKey: "remindHour") as? Int ?? 8
         reminderMinute = defaults.object(forKey: "remindMin") as? Int ?? 0
         readDays = defaults.stringArray(forKey: "readDays") ?? []
+        recentSearches = defaults.stringArray(forKey: "recents") ?? []
+        hasLaunched = defaults.bool(forKey: "launched")
     }
 
     func toggleBookmark(_ id: String) {

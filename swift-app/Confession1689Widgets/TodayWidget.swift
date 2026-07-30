@@ -110,6 +110,7 @@ struct TodayWidgetView: View {
                     Text(entry.kicker)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(wRed)
+                        .widgetAccentable()
                     Text(entry.title)
                         .font(.system(size: family == .systemSmall ? 12 : 14, weight: .medium, design: .serif))
                         .lineLimit(2)

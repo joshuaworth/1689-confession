@@ -40,6 +40,32 @@ struct SearchView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         let results = search(query)
+                        if query.count < 2 && !store.recentSearches.isEmpty {
+                            Text("Recent")
+                                .font(Fonts.sans(10.5, weight: 600))
+                                .kerning(1.2)
+                                .textCase(.uppercase)
+                                .foregroundColor(Theme.inkSoft(scheme))
+                                .padding(.horizontal, 18)
+                                .padding(.top, 14).padding(.bottom, 5)
+                            ForEach(store.recentSearches, id: \.self) { recent in
+                                Button {
+                                    query = recent
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "clock")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Theme.inkSoft(scheme))
+                                        Text(recent)
+                                            .font(Fonts.sans(15))
+                                            .foregroundColor(Theme.ink(scheme))
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 18).padding(.vertical, 10)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                         if !query.isEmpty && query.count > 1 && results.isEmpty {
                             Text("Nothing found for \u{201C}\(query)\u{201D}")
                                 .font(Fonts.sans(14))
@@ -90,16 +116,16 @@ struct SearchView: View {
 
     private func resultRow(_ result: SearchResult) -> some View {
         Button {
+            store.recordSearch(query)
+            Haptics.arrive()
             scrollTo(result.targetID)
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(result.where_)
                     .font(Fonts.sans(12, weight: 600))
                     .foregroundColor(Theme.red)
-                Text(result.excerpt)
-                    .font(Fonts.serif(15.5))
+                Text(highlighted(result.excerpt))
                     .lineSpacing(4)
-                    .foregroundColor(Theme.inkSoft(scheme))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
             }
@@ -107,6 +133,26 @@ struct SearchView: View {
             .padding(.horizontal, 18).padding(.vertical, 10)
         }
         .buttonStyle(.plain)
+    }
+
+    /// Matched terms carry the accent, exactly as they do on the site.
+    private func highlighted(_ text: String) -> AttributedString {
+        var attributed = AttributedString(text)
+        attributed.font = Fonts.serif(15.5)
+        attributed.foregroundColor = Theme.inkSoft(scheme)
+
+        let phrase = normalize(query)
+        let terms = phrase.split(separator: " ").map(String.init).filter { $0.count > 1 }
+        for term in (terms.isEmpty ? [phrase] : terms) where term.count > 1 {
+            var cursor = attributed.startIndex
+            while cursor < attributed.endIndex,
+                  let found = attributed[cursor...].range(of: term, options: .caseInsensitive) {
+                attributed[found].foregroundColor = Theme.red
+                attributed[found].font = Fonts.serif(15.5, weight: 600)
+                cursor = found.upperBound
+            }
+        }
+        return attributed
     }
 
     // MARK: Search (port of the site's scorer)
