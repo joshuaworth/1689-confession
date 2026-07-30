@@ -48,7 +48,7 @@ struct SearchView: View {
                                 .padding(.vertical, 28)
                         }
                         let grouped = Dictionary(grouping: results, by: \.group)
-                        ForEach(["Chapters", "In the Confession", "In the Scripture Proofs"], id: \.self) { group in
+                        ForEach(["Chapters", "In the Confession", "In the Scripture Proofs", "Related"], id: \.self) { group in
                             if let items = grouped[group], !items.isEmpty {
                                 Text(group)
                                     .font(Fonts.sans(10.5, weight: 600))
@@ -75,6 +75,11 @@ struct SearchView: View {
         .presentationBackground(.clear)
         .onAppear {
             focused = true
+            SemanticIndex.shared.buildIfNeeded()
+            if let pending = store.pendingSearchQuery {
+                store.pendingSearchQuery = nil
+                query = pending
+            }
             #if DEBUG
             if let seeded = UserDefaults.standard.string(forKey: "seedSearchQuery") {
                 query = seeded
@@ -209,6 +214,13 @@ struct SearchView: View {
             return seen.insert(key).inserted
         }
         results += dedupedVerses.prefix(10)
+
+        // Semantic layer: meaning-based matches the lexical pass missed.
+        let lexicalIDs = Set(results.map(\.targetID))
+        for hit in SemanticIndex.shared.related(to: raw, excluding: lexicalIDs) {
+            results.append(SearchResult(group: "Related", where_: hit.where_,
+                                        excerpt: hit.excerpt, targetID: hit.targetID, score: 0))
+        }
         return results
     }
 

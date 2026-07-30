@@ -73,7 +73,70 @@ struct ContentsSheet: View {
                     store.darkOverride = !(scheme == .dark)
                 }
             }
+
+            HStack(spacing: 10) {
+                toggleChip("Daily Reminder", isOn: store.reminderEnabled) {
+                    let turningOn = !store.reminderEnabled
+                    store.reminderEnabled = turningOn
+                    Task {
+                        let ok = await ReminderCenter.setEnabled(turningOn,
+                                                                 hour: store.reminderHour,
+                                                                 minute: store.reminderMinute)
+                        if turningOn && !ok { await MainActor.run { store.reminderEnabled = false } }
+                    }
+                }
+                if store.reminderEnabled {
+                    DatePicker("", selection: reminderTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .tint(Theme.red)
+                }
+                Spacer()
+            }
+
+            if !store.notes.isEmpty {
+                ShareLink(item: notesMarkdown(),
+                          preview: SharePreview("1689 Notes")) {
+                    Text("Export Notes")
+                        .font(Fonts.sans(13, weight: 500))
+                        .padding(.horizontal, 13).padding(.vertical, 8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.rule(scheme), lineWidth: 1))
+                        .foregroundColor(Theme.inkSoft(scheme))
+                }
+                .buttonStyle(.plain)
+            }
         }
+    }
+
+    private var reminderTime: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(bySettingHour: store.reminderHour,
+                                      minute: store.reminderMinute,
+                                      second: 0, of: Date()) ?? Date()
+            },
+            set: { newValue in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                store.reminderHour = comps.hour ?? 8
+                store.reminderMinute = comps.minute ?? 0
+                Task { await ReminderCenter.reschedule(hour: store.reminderHour, minute: store.reminderMinute) }
+            })
+    }
+
+    private func notesMarkdown() -> String {
+        var out = "# 1689 Notes\n"
+        let order = library.paragraphOrder
+        let sorted = store.notes.keys.sorted { a, b in
+            (order.firstIndex(of: a) ?? .max) < (order.firstIndex(of: b) ?? .max)
+        }
+        for id in sorted {
+            guard let note = store.notes[id] else { continue }
+            out += "\n## \(library.label(for: id))\n"
+            if let found = library.paragraph(for: id) {
+                out += "> \(String(found.paragraph.text.prefix(200)))…\n\n"
+            }
+            out += note + "\n"
+        }
+        return out
     }
 
     private func segmented(_ labels: [String], sizes: [CGFloat]? = nil,

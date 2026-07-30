@@ -26,6 +26,45 @@ final class StudyStore: ObservableObject {
     /// Set by widget taps, Spotlight results, and home-screen quick actions.
     @Published var destination: String?
 
+    /// A query queued by the Siri search intent, consumed when the search opens.
+    var pendingSearchQuery: String?
+
+    @Published var reminderEnabled: Bool { didSet { defaults.set(reminderEnabled, forKey: "remindOn") } }
+    @Published var reminderHour: Int { didSet { defaults.set(reminderHour, forKey: "remindHour") } }
+    @Published var reminderMinute: Int { didSet { defaults.set(reminderMinute, forKey: "remindMin") } }
+    /// yyyy-MM-dd days on which today's reading was opened; drives the streak.
+    @Published var readDays: [String] { didSet { defaults.set(readDays, forKey: "readDays") } }
+
+    func recordTodayRead() {
+        let key = Self.dayKey(Date())
+        if !readDays.contains(key) { readDays.append(key) }
+    }
+
+    /// Consecutive days ending today (or yesterday, so an unopened morning doesn't zero it).
+    var streak: Int {
+        let set = Set(readDays)
+        let calendar = Calendar.current
+        var anchor = Date()
+        if !set.contains(Self.dayKey(anchor)) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: anchor),
+                  set.contains(Self.dayKey(yesterday)) else { return 0 }
+            anchor = yesterday
+        }
+        var count = 0
+        var cursor = anchor
+        while set.contains(Self.dayKey(cursor)) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
+            cursor = previous
+        }
+        return count
+    }
+
+    private static func dayKey(_ date: Date) -> String {
+        let comps = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", comps.year!, comps.month!, comps.day!)
+    }
+
     func recordPosition(_ id: String) {
         guard !restoring else { return }
         position = id
@@ -39,6 +78,10 @@ final class StudyStore: ObservableObject {
         showProofs = defaults.object(forKey: "proofs") as? Bool ?? true
         darkOverride = defaults.object(forKey: "theme") as? Bool
         position = defaults.string(forKey: "pos")
+        reminderEnabled = defaults.bool(forKey: "remindOn")
+        reminderHour = defaults.object(forKey: "remindHour") as? Int ?? 8
+        reminderMinute = defaults.object(forKey: "remindMin") as? Int ?? 0
+        readDays = defaults.stringArray(forKey: "readDays") ?? []
     }
 
     func toggleBookmark(_ id: String) {

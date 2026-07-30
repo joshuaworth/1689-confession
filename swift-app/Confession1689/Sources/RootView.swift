@@ -142,6 +142,7 @@ struct RootView: View {
     private func scrollTo(_ id: String) {
         showContents = false
         showSearch = false
+        if id == library.todayParagraphID() { store.recordTodayRead() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             withAnimation(.easeOut(duration: 0.3)) { scrollID = id }
             flash(id)
@@ -238,6 +239,7 @@ private struct TopBar: View {
 // MARK: - Hero
 
 struct HeroView: View {
+    @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
     let scrollTo: (String) -> Void
     private let library = Library.shared
@@ -278,11 +280,18 @@ struct HeroView: View {
         let label = library.label(for: id)
         let title = library.paragraph(for: id)?.chapter.title ?? ""
         return VStack(alignment: .leading, spacing: 6) {
-            Text("Today's Reading")
-                .font(Fonts.sans(11, weight: 600))
-                .kerning(1.5)
-                .textCase(.uppercase)
-                .foregroundColor(Theme.inkSoft(scheme))
+            HStack(spacing: 10) {
+                Text("Today's Reading")
+                    .font(Fonts.sans(11, weight: 600))
+                    .kerning(1.5)
+                    .textCase(.uppercase)
+                    .foregroundColor(Theme.inkSoft(scheme))
+                if store.streak >= 2 {
+                    Text("\(store.streak)-day streak")
+                        .font(Fonts.sans(11, weight: 500))
+                        .foregroundColor(Theme.inkSoft(scheme))
+                }
+            }
             Button { scrollTo(id) } label: {
                 Text("\(label) · \(title)")
                     .font(Fonts.sans(13.5, weight: 500))

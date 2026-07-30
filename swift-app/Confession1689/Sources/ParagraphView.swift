@@ -6,6 +6,7 @@ import UIKit
 struct ParagraphView: View {
     @EnvironmentObject private var store: StudyStore
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let paragraphID: String
     let label: String
@@ -17,6 +18,7 @@ struct ParagraphView: View {
     @State private var expandedRef: String?
     @State private var editingNote = false
     @State private var shareCard: ShareCardItem?
+    @State private var chapterReference: ProofReference?
 
     private let library = Library.shared
 
@@ -25,11 +27,11 @@ struct ParagraphView: View {
             body_text
 
             if let ref = expandedRef, let verses = library.verses(for: ref) {
-                VerseScholium(reference: ref, verses: verses) {
-                    withAnimation(.easeOut(duration: 0.22)) { expandedRef = nil }
-                }
-                .padding(.top, 14)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                VerseScholium(reference: ref, verses: verses,
+                              readChapter: { chapterReference = ProofReference(ref) },
+                              close: { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { expandedRef = nil } })
+                    .padding(.top, 14)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if let note = store.notes[paragraphID], !note.isEmpty {
@@ -49,7 +51,7 @@ struct ParagraphView: View {
                 .replacingOccurrences(of: "proof://", with: "")
                 .removingPercentEncoding ?? ""
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.easeOut(duration: 0.26)) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.26)) {
                 expandedRef = (expandedRef == ref) ? nil : ref
             }
             return .handled
@@ -61,18 +63,32 @@ struct ParagraphView: View {
         .sheet(item: $shareCard) { item in
             ShareCardSheet(item: item)
         }
+        .fullScreenCover(item: $chapterReference) { reference in
+            BibleChapterSheet(reference: reference)
+                .environmentObject(store)
+        }
     }
 
     private var body_text: some View {
         Text(attributed)
             .lineSpacing(CGFloat(store.bodySize) * 0.55)
             .tint(Theme.red)
+            .accessibilityAction(named: store.isBookmarked(paragraphID) ? "Remove Bookmark" : "Bookmark") {
+                store.toggleBookmark(paragraphID)
+            }
+            .accessibilityAction(named: store.notes[paragraphID] == nil ? "Add Note" : "Edit Note") {
+                editingNote = true
+            }
             .onAppear {
                 store.recordPosition(paragraphID)
                 #if DEBUG
                 if let seed = UserDefaults.standard.string(forKey: "seedProof"),
                    seed.hasPrefix(paragraphID + "|") {
                     expandedRef = String(seed.dropFirst(paragraphID.count + 1))
+                }
+                if let seed = UserDefaults.standard.string(forKey: "seedChapter"),
+                   seed.hasPrefix(paragraphID + "|") {
+                    chapterReference = ProofReference(String(seed.dropFirst(paragraphID.count + 1)))
                 }
                 #endif
             }
@@ -163,6 +179,7 @@ struct VerseScholium: View {
     @Environment(\.colorScheme) private var scheme
     let reference: String
     let verses: [Verse]
+    var readChapter: (() -> Void)?
     let close: () -> Void
 
     var body: some View {
@@ -183,6 +200,16 @@ struct VerseScholium: View {
             ForEach(verses, id: \.r) { verse in
                 verseRow(verse)
                     .textSelection(.enabled)
+            }
+
+            if let readChapter, let parsed = ProofReference(reference) {
+                Button(action: readChapter) {
+                    Text("Read \(parsed.title) →")
+                        .font(Fonts.sans(12, weight: 600))
+                        .foregroundColor(Theme.red)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
 
             Text("Berean Standard Bible and World English Bible are public domain; KJV is Crown copyright expired.")

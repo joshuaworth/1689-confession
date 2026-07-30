@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreSpotlight
+import UserNotifications
 
 @main
 struct ConfessionApp: App {
@@ -27,6 +28,10 @@ struct ConfessionApp: App {
                         store.destination = pending
                     }
                     SpotlightIndexer.indexIfNeeded()
+                    if store.reminderEnabled {
+                        await ReminderCenter.reschedule(hour: store.reminderHour,
+                                                        minute: store.reminderMinute)
+                    }
                     #if DEBUG
                     Library.shared.assertProofIntegrity()
                     #endif
@@ -41,7 +46,23 @@ enum QuickActionRelay {
     static var pending: String?
 }
 
-final class AppDelegate: NSObject, UIApplicationDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let destination = response.notification.request.content.userInfo["destination"] as? String
+        Task { @MainActor in
+            StudyStore.shared.destination = destination ?? "today"
+        }
+        completionHandler()
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
